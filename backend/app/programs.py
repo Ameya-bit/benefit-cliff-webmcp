@@ -19,6 +19,21 @@ PROGRAMS: dict[str, tuple[str, ...]] = {
     "aca": ("aca_ptc",),
 }
 
+# Variables neutralized when a program is ablated. Includes the eligibility
+# side-doors other programs depend on: neutralizing TANF also kills the
+# non-cash benefit that carries SNAP broad-based categorical eligibility,
+# which is exactly the hidden interaction the ablation probe exists to reveal.
+ABLATION_VARIABLES: dict[str, tuple[str, ...]] = {
+    "snap": ("snap",),
+    "tanf": ("tanf", "is_tanf_non_cash_eligible"),
+    "medicaid": ("medicaid",),
+    "chip": ("per_capita_chip",),
+    "childcare": ("co_child_care_subsidies",),
+    "eitc": ("eitc", "co_eitc"),
+    "ctc": ("ctc", "co_ctc"),
+    "aca": ("aca_ptc",),
+}
+
 # Net income drop (in $) per axis step that counts as a cliff.
 CLIFF_THRESHOLD = 500
 

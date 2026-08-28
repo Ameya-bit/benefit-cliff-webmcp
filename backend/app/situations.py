@@ -33,6 +33,10 @@ class Household(BaseModel):
     state: str = Field(default="CO", pattern=r"^[A-Z]{2}$")
     adults: list[Adult] = Field(min_length=1, max_length=2)
     children: list[Child] = Field(default_factory=list, max_length=6)
+    # Already-enrolled families face the childcare subsidy's exit
+    # (re-determination) income test instead of the stricter entry test —
+    # the cliff sits at a different income depending on this flag.
+    receiving_childcare_subsidy: bool = False
 
 
 class SweepAxis(BaseModel):
@@ -68,13 +72,17 @@ def build_situation(household: Household, axis: SweepAxis | None = None) -> dict
 
     members = list(people)
     adult_names = [name for name in people if name.startswith("adult")]
+    spm_unit: dict = {"members": members}
+    if household.state == "CO" and household.receiving_childcare_subsidy:
+        spm_unit["co_ccap_is_in_entry_process"] = {YEAR: False}
+        spm_unit["co_ccap_is_in_re_determination_process"] = {YEAR: True}
     situation = {
         "people": people,
         "families": {"family": {"members": members}},
         # Two adults in one marital unit means married; diff_scenarios varies this later.
         "marital_units": {"marital_unit": {"members": adult_names}},
         "tax_units": {"tax_unit": {"members": members}},
-        "spm_units": {"spm_unit": {"members": members}},
+        "spm_units": {"spm_unit": spm_unit},
         "households": {
             "household": {
                 "members": members,
