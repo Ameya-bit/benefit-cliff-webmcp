@@ -249,3 +249,18 @@ h2 {
   margin-bottom: 8px;
   font-size: 0.8rem;
 }
+
+.cliff-badge:hover .badge-pill {
+  fill: rgba(208, 59, 59, 0.35);
+}
+
+.cliff-badge:hover text {
+  fill: #ffffff;
+}
+
+.hint { margin: 6px 4px 0; }
+
+.cliff-hint {
+  color: #e8908f;
+  font-weight: 600;
+}

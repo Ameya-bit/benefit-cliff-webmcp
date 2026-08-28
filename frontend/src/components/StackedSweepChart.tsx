@@ -12,7 +12,7 @@ import { useAnimatedMatrix } from "../viz/useAnimatedMatrix";
 
 const W = 860;
 const H = 420;
-const M = { top: 46, right: 16, bottom: 34, left: 60 };
+const M = { top: 68, right: 16, bottom: 34, left: 60 };
 const PLOT_W = W - M.left - M.right;
 const PLOT_H = H - M.top - M.bottom;
 
@@ -167,23 +167,36 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         {sweep.cliffs.map((cliff, i) => {
           const cx = sx(cliff.from_x);
           const topY = sy(rows[rows.length - 1][sweep.x.indexOf(cliff.from_x)]);
-          const badgeY = 14 + (i % 2) * 16;
+          const badgeY = 16 + (i % 3) * 19;
           const isSelected = selectedCliff?.from_x === cliff.from_x;
           return (
             <g
               key={cliff.from_x}
-              className="cliff-badge"
+              className={`cliff-badge${isSelected ? " selected" : ""}`}
               onClick={() => selectCliff(isSelected ? null : cliff, "human")}
             >
+              {/* generous invisible hit area — the badge is a control */}
+              <rect x={cx - 34} y={badgeY - 12} width={68} height={20} fill="transparent" />
+              <rect
+                className="badge-pill"
+                x={cx - 32}
+                y={badgeY - 11}
+                width={64}
+                height={17}
+                rx={8.5}
+                fill={isSelected ? CLIFF_COLOR : "rgba(208,59,59,0.14)"}
+                stroke={CLIFF_COLOR}
+                strokeWidth={isSelected ? 1.5 : 1}
+              />
               <line x1={cx} y1={badgeY + 6} x2={cx} y2={topY} stroke={CLIFF_COLOR} strokeWidth={1} strokeDasharray="3 3" />
               <circle cx={cx} cy={topY} r={4} fill={CLIFF_COLOR} />
               <text
                 x={cx}
-                y={badgeY}
+                y={badgeY + 2}
                 textAnchor="middle"
-                fontSize={11}
-                fontWeight={isSelected ? 700 : 500}
-                fill={isSelected ? C.inkPrimary : CLIFF_COLOR}
+                fontSize={10.5}
+                fontWeight={600}
+                fill={isSelected ? "#ffffff" : "#e8908f"}
               >
                 ▼ {fmt(cliff.net_drop)}
               </text>
@@ -261,8 +274,17 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         ))}
       </div>
 
-      {/* selected cliff readout */}
-      {selectedCliff && <CliffReadout cliff={selectedCliff} />}
+      {/* selected cliff readout, or the affordance hint */}
+      {selectedCliff ? (
+        <CliffReadout cliff={selectedCliff} />
+      ) : (
+        sweep.cliffs.length > 0 && (
+          <p className="muted small hint">
+            Click a <span className="cliff-hint">▼ cliff badge</span> to select
+            it — the agent's trace and fix probes target the selected cliff.
+          </p>
+        )
+      )}
     </div>
   );
 }
