@@ -428,3 +428,20 @@ h2 {
   font-size: 1rem;
   padding: 0 4px;
 }
+
+/* Number inputs: hide spinners so small fields show all digits ("50000"
+   was clipping to "500" behind the spin buttons). */
+.member-row input[type="number"]::-webkit-outer-spin-button,
+.member-row input[type="number"]::-webkit-inner-spin-button,
+.control-row input[type="number"]::-webkit-outer-spin-button,
+.control-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.member-row input[type="number"],
+.control-row input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.member-row label:has(input) { flex: 1; }
+.member-row label:nth-of-type(2) { flex: 1.6; }
