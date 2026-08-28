@@ -71,6 +71,22 @@ function MechanismInspector() {
           </div>
         );
       })}
+      {trace.binding_rules.map((rule) => (
+        <div key={rule.variable + (rule.person ?? "")} className="binding-rule">
+          <div className="rule-name">{rule.rule}</div>
+          <div className="muted small">
+            {rule.person ? `${rule.person.replace("_", " ")}: ` : ""}
+            {String(rule.before)} → {String(rule.after)}
+            {rule.editable_parameter && (
+              <>
+                {" · dial: "}
+                <code>{rule.editable_parameter.id}</code> ={" "}
+                {String(rule.editable_parameter.current_value)}
+              </>
+            )}
+          </div>
+        </div>
+      ))}
       <button className="probe-button inline" onClick={() => setTrace(null)}>
         clear highlight
       </button>

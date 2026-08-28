@@ -222,3 +222,17 @@ h2 {
 }
 
 .annotation path { cursor: help; }
+
+.binding-rule {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--ink-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 6px 6px 0;
+}
+
+.rule-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+}

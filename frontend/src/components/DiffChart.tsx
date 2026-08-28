@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
+import { usePeiraStore } from "../state/store";
 import type { DiffResult } from "../types";
+import { AnnotationPins } from "../viz/AnnotationPins";
 import { CHART_CHROME as C } from "../viz/palette";
 
 const W = 860;
@@ -18,6 +20,7 @@ const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
 export function DiffChart({ diff, label }: { diff: DiffResult; label: string }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [idx, setIdx] = useState<number | null>(null);
+  const annotations = usePeiraStore((s) => s.annotations);
 
   const x = diff.a.x;
   const a = diff.a.net_income;
@@ -77,6 +80,19 @@ export function DiffChart({ diff, label }: { diff: DiffResult; label: string }) 
         {idx !== null && (
           <line x1={sx(x[idx])} y1={M.top} x2={sx(x[idx])} y2={H - M.bottom} stroke={C.inkSecondary} strokeWidth={1} strokeDasharray="2 3" />
         )}
+        <AnnotationPins
+          annotations={annotations}
+          xMin={xMin}
+          xMax={xMax}
+          sx={sx}
+          yAt={(v) => {
+            const nearest = x.reduce(
+              (best, xv, i) => (Math.abs(xv - v) < Math.abs(x[best] - v) ? i : best),
+              0,
+            );
+            return sy(Math.max(a[nearest], b[nearest]));
+          }}
+        />
         <line x1={M.left} y1={sy(0)} x2={W - M.right} y2={sy(0)} stroke={C.axis} />
       </svg>
       {idx !== null && (

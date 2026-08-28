@@ -69,6 +69,26 @@ def test_ablate_tanf_reveals_snap_dependency(client):
 def test_trace_at_ccap_cliff(client):
     data = post(client, "/trace", {"household": HOUSEHOLD, "at": 50_000})
     assert data["dominant_program"] == "childcare"
+    rules = [r["rule"] for r in data["binding_rules"]]
+    assert any("entry income test" in r for r in rules)
+
+
+def test_trace_names_editable_parameter(client):
+    enrolled = {**HOUSEHOLD, "receiving_childcare_subsidy": True}
+    data = post(client, "/trace", {"household": enrolled, "at": 80_000})
+    assert data["dominant_program"] == "childcare"
+    editable = [
+        r["editable_parameter"]
+        for r in data["binding_rules"]
+        if r["editable_parameter"]
+    ]
+    assert editable and editable[0]["id"] == "ccap_exit_smi_rate"
+
+
+def test_trace_medicaid_names_person(client):
+    data = post(client, "/trace", {"household": HOUSEHOLD, "at": 29_000})
+    assert data["dominant_program"] == "medicaid"
+    assert any(r["person"] == "adult_1" for r in data["binding_rules"])
 
 
 def test_reform_extends_ccap_past_exit_cliff(client):

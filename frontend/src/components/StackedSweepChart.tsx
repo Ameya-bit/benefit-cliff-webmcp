@@ -7,6 +7,7 @@ import {
   CLIFF_COLOR,
   PROGRAM_LAYERS,
 } from "../viz/palette";
+import { AnnotationPins } from "../viz/AnnotationPins";
 import { useAnimatedMatrix } from "../viz/useAnimatedMatrix";
 
 const W = 860;
@@ -190,25 +191,20 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         )}
 
         {/* annotation pins */}
-        {annotations.map((a) => {
-          if (a.x < xMin || a.x > xMax) return null;
-          const nearest = sweep.x.reduce(
-            (best, xv, i) => (Math.abs(xv - a.x) < Math.abs(sweep.x[best] - a.x) ? i : best),
-            0,
-          );
-          const py = sy(rows[rows.length - 1][nearest]) - 10;
-          return (
-            <g key={a.id} className={`annotation annotation-${a.source}`}>
-              <line x1={sx(a.x)} y1={py + 4} x2={sx(a.x)} y2={py + 10} stroke={a.source === "agent" ? "#3987e5" : "#0ca30c"} strokeWidth={1.5} />
-              <path
-                d={`M${sx(a.x) - 5},${py - 6} h10 v8 h-10 Z`}
-                fill={a.source === "agent" ? "#3987e5" : "#0ca30c"}
-              >
-                <title>{`${a.source}: ${a.note}`}</title>
-              </path>
-            </g>
-          );
-        })}
+        <AnnotationPins
+          annotations={annotations}
+          xMin={xMin}
+          xMax={xMax}
+          sx={sx}
+          yAt={(v) => {
+            const nearest = sweep.x.reduce(
+              (best, xv, i) =>
+                Math.abs(xv - v) < Math.abs(sweep.x[best] - v) ? i : best,
+              0,
+            );
+            return sy(rows[rows.length - 1][nearest]);
+          }}
+        />
 
         {/* crosshair */}
         {idx !== null && (

@@ -47,12 +47,30 @@ export interface ProbeLogEntry {
   summary: string;
 }
 
+export interface EditableParameter {
+  id: string;
+  label: string;
+  path: string;
+  current_value: number | boolean;
+  unit: string;
+}
+
+export interface BindingRule {
+  rule: string;
+  variable: string;
+  person: string | null;
+  before: number | boolean;
+  after: number | boolean;
+  editable_parameter: EditableParameter | null;
+}
+
 export interface TraceResult {
   at: number;
   step: number;
   net_income_delta: number;
   program_deltas: Record<string, number>;
   dominant_program: string;
+  binding_rules: BindingRule[];
 }
 
 export interface DiffResult {

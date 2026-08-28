@@ -15,6 +15,8 @@ from policyengine_core.reforms import Reform
 from policyengine_us import Simulation
 from policyengine_us.system import CountryTaxBenefitSystem
 
+from .gates import GATE_MAPS
+from .policy import REFORM_PARAMETERS
 from .programs import ABLATION_VARIABLES, PROGRAMS, detect_cliffs
 from .situations import YEAR, Household, SweepAxis, build_situation
 
@@ -143,24 +145,93 @@ def run_ablation(household: Household, axis: SweepAxis, program: str) -> dict:
     }
 
 
-def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
-    """Program-level attribution of the local mechanism behavior at one point.
+def _person_names(household: Household) -> list[str]:
+    return [f"adult_{i + 1}" for i in range(len(household.adults))] + [
+        f"child_{i + 1}" for i in range(len(household.children))
+    ]
 
-    Computes each program just below and above `at` via a two-point sweep.
-    Rule-level gate tracing (which statute clause flipped) lands in Step 6;
-    until then this returns the dominant program and all deltas.
+
+def _trace_gates(sim: Simulation, household: Household, program: str) -> list[dict]:
+    """Evaluate the program's curated gate variables at both trace points and
+    report every rule whose boolean flipped across the crossing."""
+    people = _person_names(household)
+    flips = []
+    for gate in GATE_MAPS.get(program, []):
+        values = sim.calculate(gate.variable, YEAR)
+        if gate.level == "person":
+            # axis expansion orders person arrays [everyone@x0, everyone@x1]
+            matrix = np.array(values).reshape(2, len(people))
+            for p, name in enumerate(people):
+                before, after = bool(matrix[0][p]), bool(matrix[1][p])
+                if before != after:
+                    flips.append(
+                        {"rule": gate.rule, "variable": gate.variable,
+                         "person": name, "before": before, "after": after,
+                         "param_id": gate.param_id}
+                    )
+        elif gate.kind == "count":
+            before, after = float(values[0]), float(values[1])
+            if abs(before - after) >= 1:
+                flips.append(
+                    {"rule": gate.rule, "variable": gate.variable,
+                     "person": None, "before": before, "after": after,
+                     "param_id": gate.param_id}
+                )
+        else:
+            before, after = bool(values[0]), bool(values[1])
+            if before != after:
+                flips.append(
+                    {"rule": gate.rule, "variable": gate.variable,
+                     "person": None, "before": before, "after": after,
+                     "param_id": gate.param_id}
+                )
+    return flips
+
+
+def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
+    """Attribute the local mechanism behavior at one point, down to the rule.
+
+    A two-point sweep finds the dominant program; the program's curated gate
+    map (gates.py) then identifies WHICH income test flipped, for WHOM, and —
+    when the threshold is whitelisted — which policy parameter moves it. Falls
+    back gracefully to program-level attribution when no gate flips (smooth
+    phase-outs).
     """
     axis = SweepAxis(variable="employment_income", min=at, max=at + step, count=2)
     sim = make_simulation(build_situation(household, axis))
     net_income, programs = _decompose(sim)
     deltas = {slug: float(values[1] - values[0]) for slug, values in programs.items()}
     dominant = min(deltas, key=deltas.get)
+
+    binding_rules = []
+    for flip in _trace_gates(sim, household, dominant):
+        param = REFORM_PARAMETERS.get(flip.pop("param_id") or "")
+        binding_rules.append(
+            {
+                **flip,
+                "editable_parameter": (
+                    {
+                        "id": next(
+                            pid for pid, s in REFORM_PARAMETERS.items() if s is param
+                        ),
+                        "label": param.label,
+                        "path": param.path,
+                        "current_value": param.default,
+                        "unit": param.unit,
+                    }
+                    if param
+                    else None
+                ),
+            }
+        )
+
     return {
         "at": at,
         "step": step,
         "net_income_delta": float(net_income[1] - net_income[0]),
         "program_deltas": deltas,
         "dominant_program": dominant,
+        "binding_rules": binding_rules,
     }
 
 

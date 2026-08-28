@@ -216,8 +216,19 @@ export const TOOLS: PeiraTool[] = [
         at: money(at),
         crossing_effect_on_net_resources: money(trace.net_income_delta),
         binding_program: trace.dominant_program,
+        binding_rules: trace.binding_rules.map((rule) => ({
+          rule: rule.rule,
+          who: rule.person ?? "whole household",
+          flips: `${rule.before} -> ${rule.after}`,
+          editable_with: rule.editable_parameter
+            ? `edit_policy parameter '${rule.editable_parameter.id}' (currently ${rule.editable_parameter.current_value} ${rule.editable_parameter.unit})`
+            : null,
+        })),
         all_program_changes: losses,
-        note: `The ${trace.dominant_program} layer is highlighted on the canvas. Its income test flips between ${money(at)} and ${money(at + trace.step)}.`,
+        note:
+          trace.binding_rules.length > 0
+            ? `The ${trace.dominant_program} layer is highlighted on the canvas and the mechanism inspector names the rule. Where a rule lists an editable parameter, edit_policy can move that threshold.`
+            : `No eligibility gate flips here — this is a phase-out slope of ${trace.dominant_program}, not a cliff rule.`,
       };
     },
   },
