@@ -1,7 +1,35 @@
-# Plan: Benefits Cliff Probe — agent-native instrument for the US benefits system
+# Plan: Peira — agent-native instrument for the US benefits system
 
 Submission for the OpenAI WebMCP Challenge (deadline Sep 3, 2026, 1 p.m. PT).
 This is a **step-by-step build plan**, not a schedule. Each step has a verification gate — do not move on until it passes.
+
+---
+
+## PROGRESS (updated Aug 28, end of session) — Steps 1–7 ✅ DONE, next: Step 8
+
+| Step | Status | Commit |
+|---|---|---|
+| 1. Engine spike (CO cliffs reproduced) | ✅ | a74e54b |
+| 2. Backend API (all 7 endpoints + /minimal_fix later) | ✅ | de958d8 |
+| 3. Frontend + WebMCP registration + **ChatGPT gate PASSED** | ✅ | a8c3878 |
+| 4. Stacked decomposition canvas + animation + bidirectional scrub | ✅ | 087c86e |
+| 5. trace/ablate/diff/sweep_2d/annotate verbs | ✅ | b15b44f |
+| 6. Rule-level tracing (gate maps) | ✅ | 2583049 |
+| 7. edit_policy + find_minimal_fix finale | ✅ | ad1cc68, 21d74be |
+| 8. Scenario library + demo hardening | ← NEXT | |
+| 9. Dedicated UI polish (feature freeze first) | pending | |
+| 10. Ship (deploy Render+Netlify, README, video, Devpost) | pending | |
+
+### Session handoff notes
+- **Run it**: backend `cd backend && uv run uvicorn app.main:app --port 8000` (~15s warm-up; **restart after any backend edit** — a stale server once made tool results silently lack new fields). Frontend `cd frontend && npm run dev` (port 5173).
+- **Verify**: `cd backend && uv run pytest tests/` (17 tests, ~50s) and `cd frontend && npx tsx scripts/probe-e2e.ts` (drives the real WebMCP tool handlers against the live backend, covers all 9 tools incl. finale).
+- **ChatGPT desktop app is installed and VERIFIED working** (GPT-5.6 Terra, localhost:5173 loads, tools discovered + called, full probe conversations work). This is the demo environment.
+- Claude-in-Chrome extension is unreliable in this project's sessions — verify UI by asking the user to look, or retry the extension once.
+- **9 WebMCP tools registered**: set_household, sweep, trace_binding_constraint, ablate_program, diff_scenarios, sweep_2d, annotate, edit_policy, find_minimal_fix. `frontend/src/webmcp/tools.ts` is the judged artifact; probe logic shared with human controls in `frontend/src/probes/runProbes.ts`.
+- **Reference demo numbers** (enrolled CO single parent, child 3, $15k childcare): cliffs at $5k (TANF −$2,319), $29k (adult Medicaid −$8,492), $31k (child Medicaid→CHIP −$6,539), $42k (SNAP −$651), **$80k (CCAP months 12→3, −$4,439)**, $84k (ACA 400% FPL −$2,001). Ablating TANF costs SNAP $5,139 (BBCE). **find_minimal_fix heals the $80k cliff: ccap_exit_smi_rate 0.85 → 1.08** (parent fees already form a natural phase-out; the demo's closing insight).
+- New-applicant household (receiving_childcare_subsidy=false) instead hits a −$10,604 CCAP **entry** cliff at $50k (county FPG limit) — bigger number, but NOT healable via the whitelist (county-keyed param). Demo should use the enrolled household for the healing arc; the entry cliff is available for drama if wanted.
+- User feedback logged for Step 9: charts need everyday-person legibility (plain-language labels, "you are here" marker, headline takeaways); cliff badges were made explicit pill buttons after the user couldn't find them — audit every control for the same gap.
+- Both Netlify & Vercel credit requests pending on their side; **Render $50 credit claimed** (backend host).
 
 ---
 
