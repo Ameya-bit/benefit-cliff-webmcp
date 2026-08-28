@@ -21,8 +21,16 @@ import type {
 async function probing<T>(work: () => Promise<T>): Promise<T> {
   const store = usePeiraStore.getState();
   store.setProbing(true);
+  store.setProbeError(null);
   try {
     return await work();
+  } catch (error) {
+    // Surface on the bench for both parties (human clicks have no other
+    // error channel; agent failures are honest to show), then rethrow so
+    // the agent's tool reply carries the message too.
+    const message = error instanceof Error ? error.message : String(error);
+    usePeiraStore.getState().setProbeError(message);
+    throw error;
   } finally {
     usePeiraStore.getState().setProbing(false);
   }

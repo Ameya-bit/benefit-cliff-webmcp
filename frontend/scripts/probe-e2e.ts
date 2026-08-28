@@ -185,4 +185,29 @@ for (const [name, reply] of sized) {
   if (bytes > 1600) throw new Error(`${name} reply too large (${bytes} bytes)`);
 }
 
+// --- Step 8: robustness + scenario-preset validity ---
+
+// A probe that fails at the backend must surface on the bench (probeError),
+// not vanish into an unhandled rejection.
+const { runAblation } = await import("../src/probes/runProbes.ts");
+const bogusRejected = await runAblation("nonsense", "human")
+  .then(() => false)
+  .catch(() => true);
+if (!bogusRejected) throw new Error("backend accepted a bogus program name");
+if (!usePeiraStore.getState().probeError)
+  throw new Error("probe failure not surfaced on the bench");
+usePeiraStore.getState().setProbeError(null);
+
+// Every scenario preset must survive the real set_household path (zod +
+// backend) — guards against preset drift breaking the demo on-ramp.
+const { SCENARIO_PRESETS } = await import("../src/presets.ts");
+for (const preset of SCENARIO_PRESETS) {
+  const applied = (await byName.set_household.execute(
+    preset.household as unknown as Record<string, unknown>,
+  )) as { at_current_income?: { net_income?: string } };
+  if (!applied.at_current_income?.net_income)
+    throw new Error(`preset "${preset.label}" failed set_household`);
+}
+console.log(`all ${SCENARIO_PRESETS.length} scenario presets validated end-to-end`);
+
 console.log("\nE2E OK: canvas state populated, compact analysis-bearing results returned");

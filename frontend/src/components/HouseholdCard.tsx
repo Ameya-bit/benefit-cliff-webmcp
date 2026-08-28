@@ -79,7 +79,7 @@ export function HouseholdCard() {
     store.setHousehold(draft);
     store.logProbe({ source: "human", tool: "set_household", summary });
     const axis = store.sweep?.axis;
-    if (axis) void runSweep({ min: axis.min, max: axis.max }, "human");
+    if (axis) void runSweep({ min: axis.min, max: axis.max }, "human").catch(() => {});
   };
 
   const num = (value: string, fallback: number) => {

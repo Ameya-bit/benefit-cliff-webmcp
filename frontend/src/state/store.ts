@@ -34,6 +34,11 @@ interface PeiraState {
   annotations: Annotation[];
   probeLog: ProbeLogEntry[];
   isProbing: boolean;
+  /** Last failed probe's message, shown on the bench until dismissed or a
+   * new probe starts. Agent and human failures both surface here. */
+  probeError: string | null;
+  /** null = not yet known; false = plain browser, no agent attached. */
+  webmcpAvailable: boolean | null;
   setHousehold: (household: Household) => void;
   setSweep: (sweep: SweepResult) => void;
   showAblation: (
@@ -54,6 +59,8 @@ interface PeiraState {
   setTrace: (trace: TraceResult | null) => void;
   addAnnotation: (annotation: Omit<Annotation, "id">) => void;
   setProbing: (isProbing: boolean) => void;
+  setProbeError: (probeError: string | null) => void;
+  setWebmcpAvailable: (webmcpAvailable: boolean) => void;
   logProbe: (entry: Omit<ProbeLogEntry, "id" | "timestamp">) => void;
   /** Log id up to which the agent has already been told about human actions. */
   lastAgentSeenLogId: number;
@@ -80,6 +87,8 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   annotations: [],
   probeLog: [],
   isProbing: false,
+  probeError: null,
+  webmcpAvailable: null,
   setHousehold: (household) => set({ household }),
   setSweep: (sweep) =>
     set({
@@ -137,6 +146,8 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
         : state.probeLog,
     })),
   setProbing: (isProbing) => set({ isProbing }),
+  setProbeError: (probeError) => set({ probeError }),
+  setWebmcpAvailable: (webmcpAvailable) => set({ webmcpAvailable }),
   logProbe: (entry) =>
     set((state) => ({ probeLog: [logEntry(entry), ...state.probeLog] })),
   lastAgentSeenLogId: 0,

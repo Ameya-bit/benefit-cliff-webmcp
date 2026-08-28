@@ -4,6 +4,8 @@ import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
 import { HouseholdCard } from "./components/HouseholdCard";
 import { ProbeControls } from "./components/ProbeControls";
+import { ScenarioLibrary } from "./components/ScenarioLibrary";
+import { StatusBanners } from "./components/StatusBanners";
 import { PROGRAM_LAYERS } from "./viz/palette";
 import "./App.css";
 
@@ -16,14 +18,7 @@ function CanvasArea() {
 
   if (view.mode === "heatmap") return <HeatmapChart heatmap={view.heatmap} />;
   if (view.mode === "diff") return <DiffChart diff={view.diff} label={view.label} />;
-  if (!sweep) {
-    return (
-      <div className="chart-empty">
-        No sweep yet — ask the agent to probe this household, or run one from
-        the household card.
-      </div>
-    );
-  }
+  if (!sweep) return <ScenarioLibrary />;
   return (
     <>
       {view.mode === "reform" && (
@@ -127,6 +122,7 @@ export default function App() {
       </aside>
 
       <main className="panel canvas-panel">
+        <StatusBanners />
         <CanvasArea />
       </main>
 

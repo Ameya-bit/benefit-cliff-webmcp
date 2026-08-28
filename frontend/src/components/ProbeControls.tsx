@@ -102,7 +102,7 @@ export function ProbeControls() {
         <button
           className="probe-button inline"
           disabled={isProbing || range.max <= range.min}
-          onClick={() => void runSweep(range, "human")}
+          onClick={() => void runSweep(range, "human").catch(() => {})}
         >
           sweep
         </button>
@@ -119,7 +119,7 @@ export function ProbeControls() {
         <button
           className="probe-button inline"
           disabled={isProbing || !hasSweep}
-          onClick={() => void runAblation(program, "human")}
+          onClick={() => void runAblation(program, "human").catch(() => {})}
         >
           ablate
         </button>
@@ -154,7 +154,7 @@ export function ProbeControls() {
           disabled={isProbing}
           onClick={() => {
             const value = dial.isBoolean ? dialValue === 1 : dialValue;
-            void runEditPolicy({ [dial.id]: value }, `${dial.id} → ${value}`, "human");
+            void runEditPolicy({ [dial.id]: value }, `${dial.id} → ${value}`, "human").catch(() => {});
           }}
         >
           reform
@@ -172,7 +172,7 @@ export function ProbeControls() {
                 { ...household, ...preset.variant(household) },
                 preset.label,
                 "human",
-              )
+              ).catch(() => {})
             }
           >
             what if: {preset.label}
