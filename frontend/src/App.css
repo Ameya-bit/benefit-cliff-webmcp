@@ -1,65 +1,187 @@
-.app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+.bench {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 280px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header header"
+    "household canvas log";
+  gap: 14px;
+  padding: 16px 20px;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-header h1 {
+.bench-header {
+  grid-area: header;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.bench-header h1 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
+  letter-spacing: 0.01em;
 }
 
 .tagline {
-  margin: 0.2rem 0 0;
-  color: #888;
-  font-size: 0.9rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
 }
 
-.household-card ul,
-.probe-log ul {
-  list-style: none;
-  padding: 0;
-  margin: 0.4rem 0 0;
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
 }
+
+.household-panel { grid-area: household; }
+.canvas-panel { grid-area: canvas; display: flex; flex-direction: column; }
+.probe-log-panel { grid-area: log; overflow-y: auto; max-height: calc(100vh - 90px); }
 
 h2 {
-  font-size: 1rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-secondary);
+  margin: 0 0 10px;
+}
+
+.household-panel ul,
+.probe-log-panel ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
 }
 
-.canvas {
-  border: 1px solid #333;
+.probe-log-panel li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.probe-button {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 10px;
   border-radius: 8px;
-  padding: 0.5rem;
+  border: 1px solid var(--border);
+  background: #24427a;
+  color: var(--ink-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
-.sweep-chart {
+.probe-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.muted { color: var(--ink-muted); }
+.small { font-size: 0.75rem; }
+
+.chart-wrap { position: relative; }
+
+.stacked-chart {
   width: 100%;
   height: auto;
   display: block;
+  touch-action: none;
 }
 
 .chart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 3rem 1rem;
   text-align: center;
-  color: #888;
+  color: var(--ink-muted);
+}
+
+.cliff-badge { cursor: pointer; }
+
+.chart-tooltip {
+  position: absolute;
+  top: 52px;
+  transform: translateX(12px);
+  background: rgba(13, 13, 13, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  pointer-events: none;
+  min-width: 180px;
+  z-index: 5;
+}
+
+.tt-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+  color: var(--ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-row b { color: var(--ink-primary); margin-left: auto; font-weight: 600; }
+.tt-row b.neg { color: #e66767; }
+.tt-row b.pos { color: #0ca30c; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 8px 4px 0;
+  font-size: 0.75rem;
+  color: var(--ink-secondary);
+}
+
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+
+.cliff-readout {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  max-width: 420px;
 }
 
 .source {
-  display: inline-block;
-  min-width: 3.5rem;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  min-width: 3.2rem;
+  flex: none;
 }
 
-.source-agent {
-  color: #4f8ef7;
-}
+.source-agent { color: #3987e5; }
+.source-human { color: #0ca30c; }
 
-.source-human {
-  color: #2fbf71;
+@media (max-width: 900px) {
+  .bench {
+    grid-template-columns: 1fr;
+    grid-template-areas: "header" "household" "canvas" "log";
+  }
 }

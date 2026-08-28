@@ -17,9 +17,8 @@
  */
 
 import { z } from "zod";
-import { apiPost } from "../api/client";
-import { usePeiraStore } from "../state/store";
-import type { Household, SweepResult } from "../types";
+import { runSweep, setHousehold } from "../probes/runProbes";
+import type { Household } from "../types";
 
 const AdultSchema = z.object({
   age: z.number().int().min(18).max(100),
@@ -46,10 +45,6 @@ const SweepInputSchema = z.object({
 
 const money = (value: number) =>
   `$${Math.round(value).toLocaleString("en-US")}`;
-
-function currentHousehold(): Household {
-  return usePeiraStore.getState().household;
-}
 
 export interface PeiraTool {
   name: string;
@@ -108,17 +103,7 @@ export const TOOLS: PeiraTool[] = [
     },
     async execute(input) {
       const household = HouseholdSchema.parse(input) as Household;
-      const store = usePeiraStore.getState();
-      store.setHousehold(household);
-      store.logProbe({
-        source: "agent",
-        tool: "set_household",
-        summary: `${household.adults.length} adult(s), ${household.children.length} child(ren), ${household.state}`,
-      });
-      const point = await apiPost<{ net_income: number; programs: Record<string, number> }>(
-        "/calculate",
-        { household },
-      );
+      const point = await setHousehold(household, "agent");
       const active = Object.entries(point.programs)
         .filter(([, v]) => v > 0)
         .map(([slug, v]) => `${slug}: ${money(v)}/yr`);
@@ -156,18 +141,7 @@ export const TOOLS: PeiraTool[] = [
       if (range.max <= range.min) {
         throw new Error("sweep needs max > min");
       }
-      const household = currentHousehold();
-      const sweep = await apiPost<SweepResult>("/sweep", {
-        household,
-        axis: { variable: "employment_income", ...range, count: 101 },
-      });
-      const store = usePeiraStore.getState();
-      store.setSweep(sweep);
-      store.logProbe({
-        source: "agent",
-        tool: "sweep",
-        summary: `${money(range.min)}–${money(range.max)}: ${sweep.cliffs.length} cliff(s)`,
-      });
+      const sweep = await runSweep(range, "agent");
       return {
         swept: `yearly earnings ${money(range.min)} to ${money(range.max)}`,
         cliffs: sweep.cliffs.map((cliff) => ({
