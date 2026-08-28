@@ -32,4 +32,43 @@ const rejected = await byName.sweep
   .catch(() => true);
 if (!rejected) throw new Error("invalid sweep input was not rejected");
 
+// --- Step 5 verbs ---
+
+const trace = (await byName.trace_binding_constraint.execute({ at: 80_000 })) as {
+  binding_program: string;
+};
+console.log("trace ->", JSON.stringify(trace));
+if (trace.binding_program !== "childcare") throw new Error("trace wrong program");
+if (usePeiraStore.getState().trace?.dominant_program !== "childcare")
+  throw new Error("trace not in store");
+
+const ablate = (await byName.ablate_program.execute({ program: "tanf" })) as {
+  hidden_interactions: string[];
+};
+console.log("ablate ->", JSON.stringify(ablate.hidden_interactions));
+if (!ablate.hidden_interactions.some((s) => s.includes("snap")))
+  throw new Error("TANF ablation did not reveal SNAP dependency");
+if (usePeiraStore.getState().view.mode !== "ablate")
+  throw new Error("ablate view not active");
+usePeiraStore.getState().restoreBaseline();
+if (usePeiraStore.getState().view.mode !== "sweep")
+  throw new Error("restore failed");
+
+const diff = (await byName.diff_scenarios.execute({
+  label: "kid turns 6",
+  changes: { children: [{ age: 6, yearly_childcare_expenses: 8_000 }] },
+})) as { net_resources_gap: object };
+console.log("diff ->", JSON.stringify(diff));
+if (usePeiraStore.getState().view.mode !== "diff")
+  throw new Error("diff view not active");
+
+const heat = (await byName.sweep_2d.execute({})) as { grid: string };
+console.log("sweep_2d ->", JSON.stringify(heat));
+if (usePeiraStore.getState().view.mode !== "heatmap")
+  throw new Error("heatmap view not active");
+
+await byName.annotate.execute({ x: 80_000, note: "CCAP exit test binds here" });
+if (usePeiraStore.getState().annotations.length !== 1)
+  throw new Error("annotation missing");
+
 console.log("\nE2E OK: canvas state populated, compact results returned");

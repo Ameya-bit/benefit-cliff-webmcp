@@ -185,3 +185,40 @@ h2 {
     grid-template-areas: "header" "household" "canvas" "log";
   }
 }
+
+.ablate-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(208, 59, 59, 0.5);
+  background: rgba(208, 59, 59, 0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.probe-button.inline {
+  width: auto;
+  margin-top: 0;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.inspector {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+}
+
+.inspector .probe-button { margin-top: 8px; }
+
+.tt-row.dominant {
+  color: var(--ink-primary);
+  font-weight: 600;
+}
+
+.annotation path { cursor: help; }

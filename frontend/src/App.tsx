@@ -1,11 +1,85 @@
 import { usePeiraStore } from "./state/store";
 import { runSweep } from "./probes/runProbes";
 import { StackedSweepChart } from "./components/StackedSweepChart";
+import { DiffChart } from "./components/DiffChart";
+import { HeatmapChart } from "./components/HeatmapChart";
+import { PROGRAM_LAYERS } from "./viz/palette";
 import "./App.css";
+
+const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+
+function CanvasArea() {
+  const sweep = usePeiraStore((s) => s.sweep);
+  const view = usePeiraStore((s) => s.view);
+  const restoreBaseline = usePeiraStore((s) => s.restoreBaseline);
+
+  if (view.mode === "heatmap") return <HeatmapChart heatmap={view.heatmap} />;
+  if (view.mode === "diff") return <DiffChart diff={view.diff} label={view.label} />;
+  if (!sweep) {
+    return (
+      <div className="chart-empty">
+        No sweep yet — ask the agent to probe this household, or run one from
+        the household card.
+      </div>
+    );
+  }
+  return (
+    <>
+      {view.mode === "ablate" && (
+        <div className="ablate-banner">
+          <span>
+            <b>{view.program}</b> ablated —{" "}
+            {Object.keys(view.interactions).length > 0
+              ? `also moved: ${Object.entries(view.interactions)
+                  .map(([slug, v]) => `${slug} (${fmt(v)})`)
+                  .join(", ")}`
+              : "no other program depends on it"}
+          </span>
+          <button className="probe-button inline" onClick={restoreBaseline}>
+            restore baseline
+          </button>
+        </div>
+      )}
+      <StackedSweepChart sweep={sweep} />
+    </>
+  );
+}
+
+function MechanismInspector() {
+  const trace = usePeiraStore((s) => s.trace);
+  const setTrace = usePeiraStore((s) => s.setTrace);
+  if (!trace) return null;
+  const losses = Object.entries(trace.program_deltas)
+    .filter(([, v]) => Math.abs(v) > 1)
+    .sort(([, a], [, b]) => a - b);
+  return (
+    <div className="inspector">
+      <h2>Mechanism inspector</h2>
+      <div className="tt-title">
+        crossing {fmt(trace.at)} → {fmt(trace.at + trace.step)}
+      </div>
+      <div className="tt-row">
+        net resources <b className={trace.net_income_delta < 0 ? "neg" : "pos"}>{fmt(trace.net_income_delta)}</b>
+      </div>
+      {losses.map(([slug, v]) => {
+        const layer = PROGRAM_LAYERS.find((l) => l.slug === slug);
+        return (
+          <div key={slug} className={`tt-row ${slug === trace.dominant_program ? "dominant" : ""}`}>
+            <span className="swatch" style={{ background: layer?.color }} />
+            {layer?.label ?? slug}
+            <b className={v < 0 ? "neg" : "pos"}>{fmt(v)}</b>
+          </div>
+        );
+      })}
+      <button className="probe-button inline" onClick={() => setTrace(null)}>
+        clear highlight
+      </button>
+    </div>
+  );
+}
 
 export default function App() {
   const household = usePeiraStore((s) => s.household);
-  const sweep = usePeiraStore((s) => s.sweep);
   const probeLog = usePeiraStore((s) => s.probeLog);
   const isProbing = usePeiraStore((s) => s.isProbing);
 
@@ -53,17 +127,11 @@ export default function App() {
       </aside>
 
       <main className="panel canvas-panel">
-        {sweep ? (
-          <StackedSweepChart sweep={sweep} />
-        ) : (
-          <div className="chart-empty">
-            No sweep yet — ask the agent to probe this household, or run one
-            from the household card.
-          </div>
-        )}
+        <CanvasArea />
       </main>
 
       <aside className="panel probe-log-panel">
+        <MechanismInspector />
         <h2>Probe log</h2>
         {probeLog.length === 0 && <p className="muted">No probes yet.</p>}
         <ul>

@@ -43,6 +43,8 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const setCurrentIndex = usePeiraStore((s) => s.setCurrentIndex);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);
   const selectCliff = usePeiraStore((s) => s.selectCliff);
+  const trace = usePeiraStore((s) => s.trace);
+  const annotations = usePeiraStore((s) => s.annotations);
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverPx, setHoverPx] = useState<number | null>(null);
 
@@ -122,15 +124,18 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
 
         {/* base layer: earnings after taxes */}
         <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill={BASE_LAYER.color} stroke={C.surface} strokeWidth={2} />
-        {/* program layers */}
+        {/* program layers; a live trace dims everything but the binding one */}
         {PROGRAM_LAYERS.map((layer, k) => (
           <path
             key={layer.slug}
             d={areaPath(rows[k], rows[k + 1])}
             fill={layer.color}
-            fillOpacity={0.82}
+            fillOpacity={
+              trace ? (trace.dominant_program === layer.slug ? 0.95 : 0.18) : 0.82
+            }
             stroke={C.surface}
             strokeWidth={2}
+            style={{ transition: "fill-opacity 300ms ease" }}
           />
         ))}
         {/* net income top edge */}
@@ -168,6 +173,39 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
               >
                 ▼ {fmt(cliff.net_drop)}
               </text>
+            </g>
+          );
+        })}
+
+        {/* trace point marker */}
+        {trace && trace.at >= xMin && trace.at <= xMax && (
+          <line
+            x1={sx(trace.at)}
+            y1={M.top}
+            x2={sx(trace.at)}
+            y2={H - M.bottom}
+            stroke={PROGRAM_LAYERS.find((l) => l.slug === trace.dominant_program)?.color ?? C.inkPrimary}
+            strokeWidth={1.5}
+          />
+        )}
+
+        {/* annotation pins */}
+        {annotations.map((a) => {
+          if (a.x < xMin || a.x > xMax) return null;
+          const nearest = sweep.x.reduce(
+            (best, xv, i) => (Math.abs(xv - a.x) < Math.abs(sweep.x[best] - a.x) ? i : best),
+            0,
+          );
+          const py = sy(rows[rows.length - 1][nearest]) - 10;
+          return (
+            <g key={a.id} className={`annotation annotation-${a.source}`}>
+              <line x1={sx(a.x)} y1={py + 4} x2={sx(a.x)} y2={py + 10} stroke={a.source === "agent" ? "#3987e5" : "#0ca30c"} strokeWidth={1.5} />
+              <path
+                d={`M${sx(a.x) - 5},${py - 6} h10 v8 h-10 Z`}
+                fill={a.source === "agent" ? "#3987e5" : "#0ca30c"}
+              >
+                <title>{`${a.source}: ${a.note}`}</title>
+              </path>
             </g>
           );
         })}

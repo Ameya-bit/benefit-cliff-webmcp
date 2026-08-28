@@ -17,8 +17,28 @@
  */
 
 import { z } from "zod";
-import { runSweep, setHousehold } from "../probes/runProbes";
+import {
+  annotate,
+  runAblation,
+  runDiff,
+  runSweep,
+  runSweep2D,
+  runTrace,
+  setHousehold,
+} from "../probes/runProbes";
+import { usePeiraStore } from "../state/store";
 import type { Household } from "../types";
+
+const PROGRAM_SLUGS = [
+  "snap",
+  "tanf",
+  "medicaid",
+  "chip",
+  "childcare",
+  "eitc",
+  "ctc",
+  "aca",
+] as const;
 
 const AdultSchema = z.object({
   age: z.number().int().min(18).max(100),
@@ -154,6 +174,249 @@ export const TOOLS: PeiraTool[] = [
             ? "Full decomposition is drawn on the shared canvas; the human can see which colored layer collapses at each cliff."
             : "No cliffs in this range; the curve on the canvas rises smoothly.",
       };
+    },
+  },
+  {
+    name: "trace_binding_constraint",
+    description:
+      "At one earnings point, identify WHICH program's rule is the binding " +
+      "constraint driving the local behavior — the mechanism's intermediate " +
+      "state, not just its input-output curve. Defaults to the cliff " +
+      "currently selected on the canvas (the human may have clicked one). " +
+      "Lights up the responsible layer on the shared canvas. Use after a " +
+      "sweep, when the human asks WHY a cliff happens.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        at: {
+          type: "number",
+          description:
+            "yearly earnings point to interrogate, in $. Omit to use the cliff selected on the canvas.",
+        },
+      },
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({ at: z.number().min(0).max(1_000_000).optional() })
+        .parse(input);
+      const selected = usePeiraStore.getState().selectedCliff;
+      const at = parsed.at ?? selected?.from_x;
+      if (at === undefined) {
+        throw new Error(
+          "no point given and no cliff selected on the canvas — pass `at` or ask the human to click a cliff",
+        );
+      }
+      const trace = await runTrace(at, "agent");
+      const losses = Object.entries(trace.program_deltas)
+        .filter(([, v]) => v < -1)
+        .map(([slug, v]) => `${slug}: ${money(v)}`);
+      return {
+        at: money(at),
+        crossing_effect_on_net_resources: money(trace.net_income_delta),
+        binding_program: trace.dominant_program,
+        all_program_changes: losses,
+        note: `The ${trace.dominant_program} layer is highlighted on the canvas. Its income test flips between ${money(at)} and ${money(at + trace.step)}.`,
+      };
+    },
+  },
+  {
+    name: "ablate_program",
+    description:
+      "Knock one program out of the mechanism entirely and re-run the " +
+      "current sweep — the layer collapses on the shared canvas. Reveals " +
+      "hidden interactions: programs whose eligibility silently depends on " +
+      "the ablated one also move (e.g. TANF carries SNAP's categorical " +
+      "eligibility). The returned `interactions` lists every OTHER program " +
+      "whose totals changed. The human can restore the baseline from the " +
+      "canvas banner.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        program: { type: "string", enum: [...PROGRAM_SLUGS] },
+      },
+      required: ["program"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const { program } = z
+        .object({ program: z.enum(PROGRAM_SLUGS) })
+        .parse(input);
+      const result = await runAblation(program, "agent");
+      const interactions = Object.entries(result.interactions).map(
+        ([slug, total]) =>
+          `${slug} ${total < 0 ? "lost" : "gained"} ${money(Math.abs(total))} summed across the sweep`,
+      );
+      return {
+        ablated: program,
+        hidden_interactions:
+          interactions.length > 0
+            ? interactions
+            : "no other program depends on it for this household",
+        remaining_cliffs: result.ablated.cliffs.map(
+          (c) => `${money(c.from_x)}: ${money(c.net_drop)} (${c.dominant_program})`,
+        ),
+        note: "The canvas is showing the ablated mechanism; the removed layer visibly collapsed.",
+      };
+    },
+  },
+  {
+    name: "diff_scenarios",
+    description:
+      "Counterfactual probe: compare the current household against a " +
+      "variant along the same earnings sweep — marriage or a second earner " +
+      "(add an adult), a kid aging past a threshold, different childcare " +
+      "costs, or losing subsidy enrollment. Pass ONLY the fields that " +
+      "change; everything else carries over. Renders both net-resource " +
+      "curves overlaid on the shared canvas with the gap shaded. Use for " +
+      "'what if' questions a single sweep can't answer.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        label: {
+          type: "string",
+          description: "short human-readable name for the variant, e.g. 'married' or 'kid turns 6'",
+        },
+        changes: {
+          type: "object",
+          description: "fields of the household to replace in the variant",
+          properties: {
+            adults: {
+              type: "array",
+              minItems: 1,
+              maxItems: 2,
+              items: {
+                type: "object",
+                properties: {
+                  age: { type: "integer" },
+                  employment_income: { type: "number" },
+                  weekly_work_hours: { type: "number" },
+                },
+                required: ["age"],
+              },
+            },
+            children: {
+              type: "array",
+              maxItems: 6,
+              items: {
+                type: "object",
+                properties: {
+                  age: { type: "integer" },
+                  yearly_childcare_expenses: { type: "number" },
+                },
+                required: ["age"],
+              },
+            },
+            receiving_childcare_subsidy: { type: "boolean" },
+          },
+          additionalProperties: false,
+        },
+      },
+      required: ["label", "changes"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({
+          label: z.string().min(1).max(60),
+          changes: z
+            .object({
+              adults: z.array(AdultSchema).min(1).max(2).optional(),
+              children: z.array(ChildSchema).max(6).optional(),
+              receiving_childcare_subsidy: z.boolean().optional(),
+            })
+            .strict(),
+        })
+        .parse(input);
+      const current = usePeiraStore.getState().household;
+      const variant: Household = { ...current, ...parsed.changes };
+      const diff = await runDiff(variant, parsed.label, "agent");
+      const deltas = diff.net_income_delta;
+      const maxGain = Math.max(...deltas);
+      const maxLoss = Math.min(...deltas);
+      const crossings = deltas.filter(
+        (d, i) => i > 0 && Math.sign(d) !== Math.sign(deltas[i - 1]),
+      ).length;
+      return {
+        variant: parsed.label,
+        net_resources_gap: {
+          best_case_for_variant: money(maxGain),
+          worst_case_for_variant: money(maxLoss),
+          sign_changes_along_sweep: crossings,
+        },
+        note: "Both curves are overlaid on the shared canvas with the gap shaded — point the human at where they cross.",
+      };
+    },
+  },
+  {
+    name: "sweep_2d",
+    description:
+      "Probe TWO inputs at once: yearly earnings × yearly childcare cost, " +
+      "rendered as a net-resources heatmap on the shared canvas. Cliffs " +
+      "appear as ridges. This is the probe a human with a slider cannot do " +
+      "by hand — use it to find safe income regions or to show how a " +
+      "cliff's position depends on childcare costs.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        max_earnings: { type: "number", description: "x-axis top, $ (default 100000)" },
+        max_childcare_cost: { type: "number", description: "y-axis top, $ (default 30000)" },
+      },
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({
+          max_earnings: z.number().min(10_000).max(1_000_000).default(100_000),
+          max_childcare_cost: z.number().min(1_000).max(100_000).default(30_000),
+        })
+        .parse(input);
+      if (usePeiraStore.getState().household.children.length === 0) {
+        throw new Error("2D sweeps need at least one child (the y axis is that child's childcare cost)");
+      }
+      const heatmap = await runSweep2D(
+        { variable: "employment_income", min: 0, max: parsed.max_earnings, count: 41 },
+        { variable: "pre_subsidy_childcare_expenses", min: 0, max: parsed.max_childcare_cost, count: 21 },
+        "agent",
+      );
+      const flat = heatmap.net_income.flat();
+      return {
+        grid: "41 earnings steps × 21 childcare-cost steps",
+        net_resources_range: `${money(Math.min(...flat))} to ${money(Math.max(...flat))}`,
+        note: "Heatmap rendered on the shared canvas; dark ridges are cliff lines. Scrub it with the human.",
+      };
+    },
+  },
+  {
+    name: "annotate",
+    description:
+      "Pin a finding to the shared canvas at an earnings point, under your " +
+      "own identity as the agent. Use it to mark what a probe established " +
+      "('CCAP exit test binds here — a $1k raise costs $10.6k') so the " +
+      "investigation accumulates on screen. Keep notes short and factual.",
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {
+        x: { type: "number", description: "yearly earnings point to pin at, in $" },
+        note: { type: "string", description: "the finding, max 120 chars" },
+      },
+      required: ["x", "note"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({
+          x: z.number().min(0).max(1_000_000),
+          note: z.string().min(1).max(120),
+        })
+        .parse(input);
+      annotate(parsed.x, parsed.note, "agent");
+      return { pinned: `“${parsed.note}” at ${money(parsed.x)}` };
     },
   },
 ];
