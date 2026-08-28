@@ -16,7 +16,8 @@ This is a **step-by-step build plan**, not a schedule. Each step has a verificat
 | 5. trace/ablate/diff/sweep_2d/annotate verbs | ✅ | b15b44f |
 | 6. Rule-level tracing (gate maps) | ✅ | 2583049 |
 | 7. edit_policy + find_minimal_fix finale | ✅ | ad1cc68, 21d74be |
-| 8. Scenario library + demo hardening | ← NEXT | |
+| 7.5 Toolset finalization (reply enrichment + workbench read) | 🔶 code done + e2e green; live ChatGPT gate pending | |
+| 8. Scenario library + demo hardening | pending | |
 | 9. Dedicated UI polish (feature freeze first) | pending | |
 | 10. Ship (deploy Render+Netlify, README, video, Devpost) | pending | |
 
@@ -25,7 +26,7 @@ This is a **step-by-step build plan**, not a schedule. Each step has a verificat
 - **Verify**: `cd backend && uv run pytest tests/` (17 tests, ~50s) and `cd frontend && npx tsx scripts/probe-e2e.ts` (drives the real WebMCP tool handlers against the live backend, covers all 9 tools incl. finale).
 - **ChatGPT desktop app is installed and VERIFIED working** (GPT-5.6 Terra, localhost:5173 loads, tools discovered + called, full probe conversations work). This is the demo environment.
 - Claude-in-Chrome extension is unreliable in this project's sessions — verify UI by asking the user to look, or retry the extension once.
-- **9 WebMCP tools registered**: set_household, sweep, trace_binding_constraint, ablate_program, diff_scenarios, sweep_2d, annotate, edit_policy, find_minimal_fix. `frontend/src/webmcp/tools.ts` is the judged artifact; probe logic shared with human controls in `frontend/src/probes/runProbes.ts`.
+- **11 WebMCP tools registered**: set_household, sweep, query_point, trace_binding_constraint, ablate_program, diff_scenarios, sweep_2d, annotate, edit_policy, find_minimal_fix, get_workbench. `frontend/src/webmcp/tools.ts` is the judged artifact; probe logic shared with human controls in `frontend/src/probes/runProbes.ts`; curve analysis (checkpoints/recovery/dead-zones/crossings/ridges) in `frontend/src/probes/analysis.ts`. Every reply piggybacks a `human_did_meanwhile` digest of unseen human actions (WebMCP is pull-only). Human bench controls: editable household card (`HouseholdCard.tsx`) + probe strip (`ProbeControls.tsx`).
 - **Reference demo numbers** (enrolled CO single parent, child 3, $15k childcare): cliffs at $5k (TANF −$2,319), $29k (adult Medicaid −$8,492), $31k (child Medicaid→CHIP −$6,539), $42k (SNAP −$651), **$80k (CCAP months 12→3, −$4,439)**, $84k (ACA 400% FPL −$2,001). Ablating TANF costs SNAP $5,139 (BBCE). **find_minimal_fix heals the $80k cliff: ccap_exit_smi_rate 0.85 → 1.08** (parent fees already form a natural phase-out; the demo's closing insight).
 - New-applicant household (receiving_childcare_subsidy=false) instead hits a −$10,604 CCAP **entry** cliff at $50k (county FPG limit) — bigger number, but NOT healable via the whitelist (county-keyed param). Demo should use the enrolled household for the healing arc; the entry cliff is available for drama if wanted.
 - User feedback logged for Step 9: charts need everyday-person legibility (plain-language labels, "you are here" marker, headline takeaways); cliff badges were made explicit pill buttons after the user couldn't find them — audit every control for the same gap.
@@ -208,6 +209,35 @@ Curated for our 7 programs in Colorado only — that's the scope wedge, and it's
 - Frame honestly in UI copy: this shows *mechanical* fixes and their cost to this household, not policy advocacy.
 
 **Verify:** healing the $50k CCCAP cliff live in ChatGPT's browser end-to-end in < 60s.
+
+## 7.5 Toolset finalization — enrich tool replies so the agent can actually analyze
+
+Assessment (Aug 28): the probe *verbs* are right and the security constraints (whitelists, zod, readOnly hints) must not loosen. The gap is different — several tools render the answer on the canvas but return replies too thin for the agent to reason over. **The agent cannot see the canvas; its entire world is the reply JSON.** Where that JSON is thin, the analysis burden falls on the human — the party asking the agent for analysis. The fix is NOT raw arrays (compact-results rule stands): return *derived, analysis-bearing numbers*, keep every reply ≤ ~1KB. This is the last window — Step 9 is a feature freeze.
+
+Priority order:
+
+0. **New read-only `query_point` tool** — the missing "specific" end of the vocabulary. Takes 1–12 earnings points, replies with net resources + per-program breakdown at each, read from the curves currently on the canvas (baseline, ablated, or reformed — reply names which, and includes the baseline comparison when an overlay is active). Complements `trace`: query reads the curve cheaply, trace explains it expensively. No new backend work — interpolates the arrays already in the store.
+0.5 **Human-action digest piggybacked on EVERY tool reply.** WebMCP is pull-only — the page can never push "the human just did X" to the model. Two-channel fix: (a) every reply automatically appends `human_activity` (human-sourced probe-log entries since the last agent call — card edits, cliff clicks, human-run probes); (b) `get_workbench` (below) for on-demand reads when the human's chat message refers to the screen. The probe log already records everything needed.
+
+1. **`sweep` reply enrichment** (the workhorse — biggest payoff):
+   - Coarse checkpoint series of net resources (~every $10k, ≈11 pairs) so the agent can discuss curve shape, plateaus, and "what income should I target".
+   - Per-cliff **recovery point**: the earnings level at which net resources regain the pre-cliff peak ("a raise past $80k leaves you worse off until $95k") — the most quotable stat in the demo, computable from the arrays already returned.
+   - **Dead-zone spans**: stretches where large earnings gains yield near-zero net gain (high marginal-rate plateaus). Often more actionable than the cliffs.
+   - **"You are here"**: the household's current earnings, net resources there, and distance to the nearest cliff — makes every narration personal.
+   - Description tweak: note that a narrower min/max = zooming in (finer than the default $1k step; legitimizes re-sweeping around a cliff).
+2. **`diff_scenarios`**: return the crossing x-locations (not just the count) and the gap at the household's current income — turns "2 sign changes" into "marriage wins above $41k". Frontend-only (`x` + `net_income_delta` arrays already come back).
+3. **`sweep_2d`**: return a ridge summary — per cliff, how its earnings position moves with childcare cost (a compact list of (childcare, cliff-earnings) pairs) — plus 2–3 named safe regions. Unlocks the tool's own stated purpose ("find safe income regions"), which the current reply (grid size + global min/max) cannot answer. Frontend-only (`net_income` matrix already comes back).
+3.5 **`ablate_program`**: interactions currently report sweep-summed totals with no location — add the earnings range where each interaction actually bites ("SNAP loses $5,139, concentrated $5k–$42k"), computed from the baseline-vs-ablated program arrays already returned.
+4. **New read-only `get_workbench` tool**: current household (including human hand-edits to the card), selected cliff, scrub point, annotations, recent human actions, and active view (baseline / ablated / reformed + which edits). Today the agent has no side-effect-free way to observe human actions — the "shared lab bench" is one-directional in practice. This closes the loop and is strong judge material (bidirectionality is the collaborative-writing showcase's core pattern).
+4.5 **Make the human's half of the bench real** (functionality, so it must precede the Step 9 freeze):
+   - **Editable household card.** `set_household`'s description promises the agent "the human can correct it directly on the household card" — the card is currently read-only, so the tool contract lies. Editable fields (incomes, hours, ages, childcare cost, subsidy checkbox, add/remove people within schema limits); edits log to the probe log as human `set_household` and re-run the active sweep so both parties see fresh curves.
+   - **Human probe controls** wired over the existing `runProbes` functions (they already take `source: "human"`): sweep with custom range, ablate picker, policy-dial editor, a few diff preset chips, pin-a-note at the scrub cursor. Without these the human is a spectator and the complementarity criterion ("what human and agent accomplish *together*") collapses to "human asks questions".
+5. **Timeboxed stretch (skip if backend cost is high)**:
+   - `sweep` over `weekly_work_hours` — the preset library headlines a 32-vs-38-hours decision but there is no hours sweep (only single-point diffs). Backend axis whitelist + frontend axis param.
+   - Add the CCAP **entry** county income limit to the `edit_policy` whitelist so the −$10.6k entry cliff (the biggest number in the model) becomes healable — currently `find_minimal_fix` must answer "can't fix the big one". If skipped, preempt it honestly in the tool description.
+6. **Description audit**: every description should teach *strategy* (when to reach for this probe, what it reveals, what to do next) — the file is read by both the model at runtime and the judges as the artifact.
+
+**Verify:** `probe-e2e.ts` asserts every new reply field (query_point values, sweep checkpoints/recovery/dead-zones, diff crossings, 2D ridges, ablate bite ranges, workbench snapshot, human-activity digest); all replies ≤ ~1KB; then a live ChatGPT session must answer three previously-unanswerable questions without the human reading the screen to it: (a) "what income range is safe for me?", (b) "at what income does getting married start to win?", (c) "how big a raise makes crossing the $80k cliff worth it?". Plus the bidirectional gate: edit the card by hand + click a cliff + run a human ablation, then ask the agent "what do you make of what I just did?" — it must answer from the digest/workbench without being told. Commit.
 
 ## 8. Scenario library + demo hardening
 

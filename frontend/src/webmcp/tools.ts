@@ -10,13 +10,27 @@
  *   canvas is the shared memory; the human reads understanding off it.
  * - Every input is re-validated here with zod (the browser does not guarantee
  *   schema validation before execute runs) and again by the backend.
- *
- * Step 3 registers the first two verbs (set_household, sweep). The remaining
- * probes (diff_scenarios, ablate_program, trace_binding_constraint,
- * edit_policy, annotate) land in Steps 5-7.
+ * - Compact does not mean starved: replies carry the DERIVED numbers an LLM
+ *   needs to reason (checkpoints, recovery points, dead zones, crossings,
+ *   ridges) — computed in probes/analysis.ts from arrays that stay in the
+ *   store — never the raw 101-point arrays themselves.
+ * - WebMCP is pull-only, so the bench pushes nothing. Instead every reply
+ *   piggybacks a digest of human actions the agent hasn't seen (card edits,
+ *   cliff clicks, human-run probes), and get_workbench reads the full bench
+ *   on demand. The shared canvas stays bidirectional.
  */
 
 import { z } from "zod";
+import {
+  cliffRecovery,
+  diffSegments,
+  findDeadZones,
+  heatmapRidges,
+  interactionBite,
+  interpolate,
+  locateHousehold,
+  sampleCheckpoints,
+} from "../probes/analysis";
 import {
   annotate,
   runAblation,
@@ -31,7 +45,7 @@ import {
 import { usePeiraStore } from "../state/store";
 import type { Household } from "../types";
 
-const PROGRAM_SLUGS = [
+export const PROGRAM_SLUGS = [
   "snap",
   "tanf",
   "medicaid",
@@ -44,7 +58,7 @@ const PROGRAM_SLUGS = [
 
 /** Must mirror the backend whitelist in app/policy.py — the mechanism's
  * editable dials. trace_binding_constraint results name these ids. */
-const POLICY_PARAMETERS = [
+export const POLICY_PARAMETERS = [
   "ccap_exit_smi_rate",
   "ccap_entry_smi_rate",
   "snap_gross_income_limit",
@@ -77,6 +91,12 @@ const SweepInputSchema = z.object({
 const money = (value: number) =>
   `$${Math.round(value).toLocaleString("en-US")}`;
 
+/** The household's actual earnings — anchors "you are here" in replies. */
+const householdEarnings = (): number =>
+  usePeiraStore
+    .getState()
+    .household.adults.reduce((sum, a) => sum + a.employment_income, 0);
+
 export interface PeiraTool {
   name: string;
   description: string;
@@ -85,7 +105,7 @@ export interface PeiraTool {
   execute: (input: Record<string, unknown>) => Promise<unknown>;
 }
 
-export const TOOLS: PeiraTool[] = [
+const RAW_TOOLS: PeiraTool[] = [
   {
     name: "set_household",
     description:
@@ -153,11 +173,15 @@ export const TOOLS: PeiraTool[] = [
     description:
       "Run the benefits mechanism across a range of yearly earnings for the " +
       "current household and draw the result on the shared canvas as a " +
-      "per-program decomposition. Returns the cliffs found: income points " +
-      "where earning $1,000 more makes the family's net resources DROP, " +
-      "attributed to the program that collapses. This is the opening probe " +
-      "of almost every investigation; interrogate individual cliffs " +
-      "afterwards with the human.",
+      "per-program decomposition. Returns the landscape: every cliff (income " +
+      "points where earning $1,000 more makes net resources DROP, attributed " +
+      "to the program that collapses, with the earnings level that finally " +
+      "recovers the loss), dead zones (wide stretches where extra earnings " +
+      "buy almost nothing net), the curve's shape at checkpoints, and where " +
+      "this family currently sits. Pass a narrower min/max to zoom into a " +
+      "region at finer resolution. This is the opening probe of almost every " +
+      "investigation; read exact values afterwards with query_point, explain " +
+      "cliffs with trace_binding_constraint.",
     readOnly: true,
     inputSchema: {
       type: "object",
@@ -173,18 +197,125 @@ export const TOOLS: PeiraTool[] = [
         throw new Error("sweep needs max > min");
       }
       const sweep = await runSweep(range, "agent");
+      const here = locateHousehold(sweep, householdEarnings());
+      const deadZones = findDeadZones(sweep.x, sweep.net_income);
       return {
         swept: `yearly earnings ${money(range.min)} to ${money(range.max)}`,
-        cliffs: sweep.cliffs.map((cliff) => ({
-          crossing: `${money(cliff.from_x)} -> ${money(cliff.to_x)}`,
-          net_resources_change: money(cliff.net_drop),
-          dominant_program: cliff.dominant_program,
-        })),
+        cliffs: sweep.cliffs.map((cliff) => {
+          const recovery = cliffRecovery(sweep.x, sweep.net_income, cliff);
+          return {
+            crossing: `${money(cliff.from_x)} -> ${money(cliff.to_x)}`,
+            net_resources_change: money(cliff.net_drop),
+            dominant_program: cliff.dominant_program,
+            worse_off_until: recovery ? money(recovery) : "never within swept range",
+          };
+        }),
+        dead_zones: deadZones.map(
+          (zone) =>
+            `${money(zone.from_x)}-${money(zone.to_x)}: earning ${money(zone.earnings_gain)} more ${
+              zone.net_gain < 0
+                ? `LOSES ${money(Math.abs(zone.net_gain))} net`
+                : `nets only ${money(zone.net_gain)}`
+            }`,
+        ),
+        curve_shape: sampleCheckpoints(sweep.x, sweep.net_income, 9).map(
+          (p) => `${money(p.x)}: net ${money(p.net)}`,
+        ),
+        this_family: here
+          ? {
+              current_earnings: money(here.current_earnings),
+              net_resources: money(here.net_resources),
+              next_cliff: here.next_cliff
+                ? `${here.next_cliff.dominant_program} cliff at ${money(here.next_cliff.at)} — ${money(here.next_cliff.distance)} above current earnings`
+                : "none ahead in this range",
+            }
+          : "current earnings fall outside the swept range",
         note:
           sweep.cliffs.length > 0
-            ? "Full decomposition is drawn on the shared canvas; the human can see which colored layer collapses at each cliff."
+            ? "Decomposition drawn on the shared canvas — each cliff's colored layer visibly collapses."
             : "No cliffs in this range; the curve on the canvas rises smoothly.",
       };
+    },
+  },
+  {
+    name: "query_point",
+    description:
+      "Read exact values off the curves currently on the canvas at up to 12 " +
+      "earnings points: net resources and each active program's contribution. " +
+      "The cheap precision probe — use it to answer 'what do we keep at $X', " +
+      "to compare candidate incomes, or to quantify a raise, without " +
+      "re-running the mechanism. When an ablated or reformed mechanism is " +
+      "displayed, values come from THAT curve and a current-law comparison " +
+      "is included. Needs a sweep first. Complements " +
+      "trace_binding_constraint: query reads the curve, trace explains it.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        points: {
+          type: "array",
+          minItems: 1,
+          maxItems: 12,
+          items: { type: "number" },
+          description: "yearly earnings points to read, in $",
+        },
+      },
+      required: ["points"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({
+          points: z.array(z.number().min(0).max(1_000_000)).min(1).max(12),
+        })
+        .parse(input);
+      const store = usePeiraStore.getState();
+      const sweep = store.sweep;
+      if (!sweep) {
+        throw new Error("no sweep on the canvas yet — run sweep first");
+      }
+      const { min, max } = sweep.axis;
+      const outside = parsed.points.filter((p) => p < min || p > max);
+      if (outside.length > 0) {
+        throw new Error(
+          `point(s) ${outside.map(money).join(", ")} are outside the swept range ${money(min)}-${money(max)} — re-run sweep over a range that covers them`,
+        );
+      }
+      const view = store.view;
+      const curve =
+        view.mode === "ablate"
+          ? `mechanism with ${view.program} ablated`
+          : view.mode === "reform"
+            ? `reformed mechanism (${view.label})`
+            : "current law";
+      const baseline = store.baselineSweep;
+      const readings = parsed.points.map((at) => {
+        const programs = Object.fromEntries(
+          Object.entries(sweep.programs)
+            .map(([slug, series]) => [slug, interpolate(sweep.x, series, at)])
+            .filter(([, v]) => (v as number) > 1)
+            .map(([slug, v]) => [slug, money(v as number)]),
+        );
+        const net = interpolate(sweep.x, sweep.net_income, at);
+        return {
+          at: money(at),
+          net_resources: money(net),
+          programs,
+          ...(baseline
+            ? {
+                vs_current_law: money(
+                  net - interpolate(baseline.x, baseline.net_income, at),
+                ),
+              }
+            : {}),
+        };
+      });
+      store.logProbe({
+        source: "agent",
+        tool: "query_point",
+        summary: `read ${curve} at ${parsed.points.map((p) => money(p)).join(", ")}`,
+      });
+      return { curve, readings };
     },
   },
   {
@@ -268,8 +399,17 @@ export const TOOLS: PeiraTool[] = [
         .parse(input);
       const result = await runAblation(program, "agent");
       const interactions = Object.entries(result.interactions).map(
-        ([slug, total]) =>
-          `${slug} ${total < 0 ? "lost" : "gained"} ${money(Math.abs(total))} summed across the sweep`,
+        ([slug, total]) => {
+          const bite = interactionBite(
+            result.baseline.x,
+            result.baseline.programs[slug],
+            result.ablated.programs[slug],
+          );
+          const where = bite
+            ? ` between earnings ${money(bite.from_x)} and ${money(bite.to_x)}`
+            : "";
+          return `${slug} ${total < 0 ? "lost" : "gained"} ${money(Math.abs(total))} summed across the sweep${where}`;
+        },
       );
       return {
         ablated: program,
@@ -357,18 +497,27 @@ export const TOOLS: PeiraTool[] = [
       const variant: Household = { ...current, ...parsed.changes };
       const diff = await runDiff(variant, parsed.label, "agent");
       const deltas = diff.net_income_delta;
-      const maxGain = Math.max(...deltas);
-      const maxLoss = Math.min(...deltas);
-      const crossings = deltas.filter(
-        (d, i) => i > 0 && Math.sign(d) !== Math.sign(deltas[i - 1]),
-      ).length;
+      const xs = diff.a.x;
+      const earnings = householdEarnings();
+      const gapAtCurrent =
+        earnings >= xs[0] && earnings <= xs[xs.length - 1]
+          ? interpolate(xs, deltas, earnings)
+          : null;
       return {
         variant: parsed.label,
         net_resources_gap: {
-          best_case_for_variant: money(maxGain),
-          worst_case_for_variant: money(maxLoss),
-          sign_changes_along_sweep: crossings,
+          best_case_for_variant: money(Math.max(...deltas)),
+          worst_case_for_variant: money(Math.min(...deltas)),
         },
+        who_wins_where: diffSegments(xs, deltas).map((seg) =>
+          seg.leader === "even"
+            ? `${money(seg.from_x)}-${money(seg.to_x)}: roughly even`
+            : `${money(seg.from_x)}-${money(seg.to_x)}: ${seg.leader} ahead`,
+        ),
+        at_current_earnings:
+          gapAtCurrent === null
+            ? "current earnings fall outside the swept range"
+            : `at ${money(earnings)} the variant nets ${money(gapAtCurrent)} ${gapAtCurrent >= 0 ? "more" : "less"} than the current household`,
         note: "Both curves are overlaid on the shared canvas with the gap shaded — point the human at where they cross.",
       };
     },
@@ -409,7 +558,17 @@ export const TOOLS: PeiraTool[] = [
       return {
         grid: "41 earnings steps × 21 childcare-cost steps",
         net_resources_range: `${money(Math.min(...flat))} to ${money(Math.max(...flat))}`,
-        note: "Heatmap rendered on the shared canvas; dark ridges are cliff lines. Scrub it with the human.",
+        cliff_ridges_by_childcare_cost: heatmapRidges(heatmap).map((row) => ({
+          childcare_cost: money(row.childcare_cost),
+          cliffs_at:
+            row.cliffs_at.length > 0
+              ? row.cliffs_at.map(money).join(", ")
+              : "none",
+          widest_safe_earnings_span: row.widest_safe_span
+            ? `${money(row.widest_safe_span.from_x)}-${money(row.widest_safe_span.to_x)}`
+            : "none",
+        })),
+        note: "Heatmap rendered on the shared canvas; dark ridges are cliff lines. Where a cliff's position shifts across rows, childcare cost moves that cliff.",
       };
     },
   },
@@ -550,4 +709,79 @@ export const TOOLS: PeiraTool[] = [
       };
     },
   },
+  {
+    name: "get_workbench",
+    description:
+      "Read the shared bench without changing anything: the household card " +
+      "as it stands NOW (the human may have hand-edited it — that is ground " +
+      "truth), what the canvas is showing, which cliff is selected, where " +
+      "the scrub cursor sits, every pinned note, and the human's recent " +
+      "actions. Call it when the human refers to something they did or see " +
+      "on screen ('that cliff I clicked', 'I changed the daycare cost'), or " +
+      "to re-sync after a pause. Never guess at bench state — read it.",
+    readOnly: true,
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    async execute() {
+      const store = usePeiraStore.getState();
+      const { sweep, view, selectedCliff, currentIndex, annotations } = store;
+      const scrubX =
+        sweep && currentIndex !== null ? sweep.x[currentIndex] : null;
+      const canvas = !sweep
+        ? "empty — no sweep yet"
+        : view.mode === "ablate"
+          ? `sweep with ${view.program} ablated`
+          : view.mode === "reform"
+            ? `reformed sweep (${view.label})`
+            : view.mode === "heatmap"
+              ? "2D earnings × childcare heatmap"
+              : view.mode === "diff"
+                ? `diff overlay (${view.label})`
+                : `baseline sweep ${money(sweep.axis.min)}-${money(sweep.axis.max)}, ${sweep.cliffs.length} cliff(s)`;
+      store.logProbe({
+        source: "agent",
+        tool: "get_workbench",
+        summary: "read the bench state",
+      });
+      return {
+        household: store.household,
+        canvas,
+        selected_cliff: selectedCliff
+          ? `${money(selectedCliff.from_x)} (${selectedCliff.dominant_program}, drop ${money(selectedCliff.net_drop)})`
+          : null,
+        scrub_cursor: scrubX !== null ? money(scrubX) : null,
+        pinned_notes: annotations.map(
+          (a) => `${a.source} @ ${money(a.x)}: ${a.note}`,
+        ),
+        recent_human_actions: store.probeLog
+          .filter((e) => e.source === "human")
+          .slice(0, 8)
+          .map((e) => `${e.tool}: ${e.summary}`),
+      };
+    },
+  },
 ];
+
+/**
+ * WebMCP is pull-only — the page can never push "the human just did X" to
+ * the model. Every reply therefore piggybacks a digest of human actions the
+ * agent hasn't seen yet (card edits, cliff clicks, human-run probes), so the
+ * agent finds out on whatever call it makes next.
+ */
+function withHumanDigest(tool: PeiraTool): PeiraTool {
+  return {
+    ...tool,
+    async execute(input) {
+      const result = await tool.execute(input);
+      const unseen = usePeiraStore.getState().digestHumanActions();
+      if (unseen.length === 0 || typeof result !== "object" || result === null) {
+        return result;
+      }
+      return {
+        ...result,
+        human_did_meanwhile: unseen.map((e) => `${e.tool}: ${e.summary}`),
+      };
+    },
+  };
+}
+
+export const TOOLS: PeiraTool[] = RAW_TOOLS.map(withHumanDigest);

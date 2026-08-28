@@ -264,3 +264,84 @@ h2 {
   color: #e8908f;
   font-weight: 600;
 }
+
+/* --- Editable household card + human probe controls (Step 7.5) --- */
+
+.household-card { display: flex; flex-direction: column; gap: 8px; }
+
+.member-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.member-label {
+  font-size: 0.75rem;
+  color: var(--ink-secondary);
+  min-width: 52px;
+  padding-bottom: 5px;
+}
+
+.member-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.member-row input[type="number"],
+.control-row input[type="number"],
+.control-row input[type="text"],
+.control-row select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--ink-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+}
+
+.member-remove {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px;
+}
+.member-remove:hover { color: var(--ink-primary); }
+
+.member-add-row { display: flex; gap: 6px; }
+
+.subsidy-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+.probe-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-row.chips { flex-wrap: wrap; }

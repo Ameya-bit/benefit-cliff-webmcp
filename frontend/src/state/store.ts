@@ -55,6 +55,12 @@ interface PeiraState {
   addAnnotation: (annotation: Omit<Annotation, "id">) => void;
   setProbing: (isProbing: boolean) => void;
   logProbe: (entry: Omit<ProbeLogEntry, "id" | "timestamp">) => void;
+  /** Log id up to which the agent has already been told about human actions. */
+  lastAgentSeenLogId: number;
+  /** Human-sourced log entries the agent hasn't seen yet (oldest first);
+   * advances the pointer — WebMCP is pull-only, so tool replies piggyback
+   * this digest to fake push. */
+  digestHumanActions: () => ProbeLogEntry[];
 }
 
 let probeId = 0;
@@ -63,7 +69,7 @@ const logEntry = (
   entry: Omit<ProbeLogEntry, "id" | "timestamp">,
 ): ProbeLogEntry => ({ ...entry, id: ++probeId, timestamp: Date.now() });
 
-export const usePeiraStore = create<PeiraState>((set) => ({
+export const usePeiraStore = create<PeiraState>((set, get) => ({
   household: DEFAULT_HOUSEHOLD,
   sweep: null,
   baselineSweep: null,
@@ -133,4 +139,14 @@ export const usePeiraStore = create<PeiraState>((set) => ({
   setProbing: (isProbing) => set({ isProbing }),
   logProbe: (entry) =>
     set((state) => ({ probeLog: [logEntry(entry), ...state.probeLog] })),
+  lastAgentSeenLogId: 0,
+  digestHumanActions: () => {
+    const { probeLog, lastAgentSeenLogId } = get();
+    const unseen = probeLog
+      .filter((e) => e.source === "human" && e.id > lastAgentSeenLogId)
+      .reverse();
+    const newestId = probeLog[0]?.id ?? lastAgentSeenLogId;
+    set({ lastAgentSeenLogId: newestId });
+    return unseen;
+  },
 }));

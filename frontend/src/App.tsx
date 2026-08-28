@@ -1,8 +1,9 @@
 import { usePeiraStore } from "./state/store";
-import { runSweep } from "./probes/runProbes";
 import { StackedSweepChart } from "./components/StackedSweepChart";
 import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
+import { HouseholdCard } from "./components/HouseholdCard";
+import { ProbeControls } from "./components/ProbeControls";
 import { PROGRAM_LAYERS } from "./viz/palette";
 import "./App.css";
 
@@ -105,9 +106,7 @@ function MechanismInspector() {
 }
 
 export default function App() {
-  const household = usePeiraStore((s) => s.household);
   const probeLog = usePeiraStore((s) => s.probeLog);
-  const isProbing = usePeiraStore((s) => s.isProbing);
 
   return (
     <div className="bench">
@@ -120,33 +119,8 @@ export default function App() {
 
       <aside className="panel household-panel">
         <h2>Household</h2>
-        <ul>
-          {household.adults.map((adult, i) => (
-            <li key={`a${i}`}>
-              Adult {i + 1} · age {adult.age} · $
-              {adult.employment_income.toLocaleString()}/yr
-            </li>
-          ))}
-          {household.children.map((child, i) => (
-            <li key={`c${i}`}>
-              Child {i + 1} · age {child.age} · childcare $
-              {child.yearly_childcare_expenses.toLocaleString()}/yr
-            </li>
-          ))}
-          <li className="muted">
-            {household.state}
-            {household.receiving_childcare_subsidy
-              ? " · receiving childcare subsidy"
-              : ""}
-          </li>
-        </ul>
-        <button
-          className="probe-button"
-          disabled={isProbing}
-          onClick={() => void runSweep({ min: 0, max: 100_000 }, "human")}
-        >
-          {isProbing ? "probing…" : "Sweep earnings $0–$100k"}
-        </button>
+        <HouseholdCard />
+        <ProbeControls />
         <p className="muted small">
           Model estimates from policyengine-us — not benefits advice.
         </p>
