@@ -17,7 +17,7 @@ This is a **step-by-step build plan**, not a schedule. Each step has a verificat
 | 6. Rule-level tracing (gate maps) | ✅ | 2583049 |
 | 7. edit_policy + find_minimal_fix finale | ✅ | ad1cc68, 21d74be |
 | 7.5 Toolset finalization (reply enrichment + workbench read) | ✅ live gate PASSED (all 3 questions + bidirectional check) | 7d39162 |
-| 8. Scenario library + demo hardening | pending | |
+| 8. Scenario library + demo hardening | 🔶 code done + e2e green; demo-arc rehearsal (×2 in ChatGPT) pending | c030614 |
 | 9. Dedicated UI polish (feature freeze first) | pending | |
 | 10. Ship (deploy Render+Netlify, README, video, Devpost) | pending | |
 
