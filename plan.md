@@ -219,6 +219,7 @@ All probe verbs work, the demo arc runs end-to-end — now make it look world-cl
 | Risk | Mitigation |
 |---|---|
 | ChatGPT browser quirks (safety review on tool calls, model gating to Sol/Terra) | Step 3 gates on a real ChatGPT end-to-end test in week one; keep Chrome-flag + Tool Inspector as fallback demo environment |
+| **User has no ChatGPT desktop app installed** (needed for the Step 3 gate + demo video; Codex NOT needed) | Dev loop is fully local: flagged Chrome + DevTools WebMCP panel + Model Context Tool Inspector extension (real agent, no OpenAI account). Before the Step 3 gate: install the free ChatGPT macOS app and sign in; WebMCP needs GPT-5.6 Sol/Terra — if those are gated on free tier, a month of Plus is the fallback cost of doing the gate + video properly |
 | Reform latency (~5s/build) makes the finale drag | LRU cache of reformed systems; pre-warm the demo's exact reforms; "recomputing the mechanism" animation |
 | `trace_binding_constraint` rabbit hole | Timeboxed; curated gate-maps for CO only; graceful degradation to program-level attribution |
 | WebMCP API drift before judging | Feature-detect `document.modelContext ?? navigator.modelContext`; polyfill fallback; pin nothing exotic |

@@ -1,0 +1,65 @@
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.tagline {
+  margin: 0.2rem 0 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.household-card ul,
+.probe-log ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.canvas {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.sweep-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #888;
+}
+
+.source {
+  display: inline-block;
+  min-width: 3.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.source-agent {
+  color: #4f8ef7;
+}
+
+.source-human {
+  color: #2fbf71;
+}
