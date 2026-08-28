@@ -88,6 +88,12 @@ class ReformRequest(BaseModel):
     reforms: dict[str, float | bool]
 
 
+class MinimalFixRequest(BaseModel):
+    household: Household
+    axis: SweepAxis = Field(default_factory=SweepAxis)
+    cliff_at: float = Field(ge=0, le=1_000_000)
+
+
 @app.get("/health")
 def health():
     return envelope({"status": "warm"})
@@ -136,6 +142,11 @@ def reform(req: ReformRequest):
     baseline = engine.run_sweep(req.household, req.axis)
     reformed = engine.run_sweep(req.household, req.axis, overrides)
     return envelope({"baseline": baseline, "reformed": reformed})
+
+
+@app.post("/minimal_fix")
+def minimal_fix(req: MinimalFixRequest):
+    return envelope(engine.run_minimal_fix(req.household, req.axis, req.cliff_at))
 
 
 @app.get("/policy-parameters")

@@ -236,3 +236,16 @@ h2 {
   font-weight: 600;
   color: var(--ink-primary);
 }
+
+.reform-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(12, 163, 12, 0.45);
+  background: rgba(12, 163, 12, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}

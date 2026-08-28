@@ -111,6 +111,25 @@ def test_reform_extends_ccap_past_exit_cliff(client):
     assert reformed_at_85k > 1_000
 
 
+def test_minimal_fix_heals_ccap_cliff(client):
+    """The finale: the smallest whitelisted edit that removes the CCAP cliff.
+    Verified manually: exit=0.95 leaves cliffs, exit=1.1 removes all childcare
+    cliffs — so the search should land just above 1.0."""
+    enrolled = {**HOUSEHOLD, "receiving_childcare_subsidy": True}
+    data = post(
+        client,
+        "/minimal_fix",
+        {"household": enrolled, "cliff_at": 80_000},
+    )
+    assert data["found"] and data["healed"]
+    assert data["parameter"]["id"] == "ccap_exit_smi_rate"
+    assert 0.95 < data["minimal_value"] <= 1.2
+    childcare_cliffs = [
+        c for c in data["reformed"]["cliffs"] if c["dominant_program"] == "childcare"
+    ]
+    assert childcare_cliffs == []
+
+
 def test_reform_rejects_unknown_parameter(client):
     response = client.post(
         "/reform",

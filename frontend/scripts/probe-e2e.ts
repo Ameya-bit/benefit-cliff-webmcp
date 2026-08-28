@@ -71,4 +71,27 @@ await byName.annotate.execute({ x: 80_000, note: "CCAP exit test binds here" });
 if (usePeiraStore.getState().annotations.length !== 1)
   throw new Error("annotation missing");
 
+// --- Step 7 finale verbs ---
+
+const edited = (await byName.edit_policy.execute({
+  parameter: "ccap_exit_smi_rate",
+  value: 1.1,
+})) as { cliffs_under_reform: string[] };
+console.log("edit_policy reformed cliffs ->", JSON.stringify(edited.cliffs_under_reform));
+if (edited.cliffs_under_reform.some((c) => c.includes("childcare")))
+  throw new Error("exit=1.1 should remove childcare cliffs");
+if (usePeiraStore.getState().view.mode !== "reform")
+  throw new Error("reform view not active");
+usePeiraStore.getState().restoreBaseline();
+
+const fix = (await byName.find_minimal_fix.execute({ cliff_at: 80_000 })) as {
+  healed: boolean;
+  change: string;
+  search_path: string[];
+};
+console.log("find_minimal_fix ->", JSON.stringify(fix, null, 1));
+if (!fix.healed) throw new Error("minimal fix should heal the CCAP cliff");
+if (usePeiraStore.getState().view.mode !== "reform")
+  throw new Error("minimal-fix reform view not active");
+
 console.log("\nE2E OK: canvas state populated, compact results returned");

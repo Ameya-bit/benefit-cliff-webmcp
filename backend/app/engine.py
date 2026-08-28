@@ -16,7 +16,7 @@ from policyengine_us import Simulation
 from policyengine_us.system import CountryTaxBenefitSystem
 
 from .gates import GATE_MAPS
-from .policy import REFORM_PARAMETERS
+from .policy import REFORM_PARAMETERS, build_reform_overrides
 from .programs import ABLATION_VARIABLES, PROGRAMS, detect_cliffs
 from .situations import YEAR, Household, SweepAxis, build_situation
 
@@ -27,7 +27,7 @@ BASELINE_REFORM = {
 }
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=16)
 def _get_system(reform_key: str) -> CountryTaxBenefitSystem:
     overrides = json.loads(reform_key)
     reform = Reform.from_dict({**BASELINE_REFORM, **overrides}, country_id="us")
@@ -272,4 +272,93 @@ def run_sweep_2d(
         "axis_x": axis_x.model_dump(),
         "axis_y": axis_y.model_dump(),
         "net_income": matrix.tolist(),
+    }
+
+
+def run_minimal_fix(household: Household, axis: SweepAxis, cliff_at: float) -> dict:
+    """Search policy-space for the smallest whitelisted edit that removes a cliff.
+
+    Traces the cliff to its binding rule, takes the rule's editable parameter,
+    then walks a coarse value ladder toward the parameter's bound and bisects
+    back for minimality. "Healed" means no cliff dominated by the traced
+    program remains anywhere in the swept range (a cliff that merely moves
+    does not count as fixed).
+    """
+    trace = run_trace(household, cliff_at)
+    program = trace["dominant_program"]
+    editables = []
+    for rule in trace["binding_rules"]:
+        parameter = rule["editable_parameter"]
+        if parameter and parameter["id"] not in [e["id"] for e in editables]:
+            editables.append(parameter)
+    if not editables:
+        return {
+            "found": False,
+            "program": program,
+            "reason": (
+                f"the binding rule(s) of {program} at this cliff have no "
+                "whitelisted editable parameter"
+            ),
+            "trace": trace,
+        }
+
+    parameter = editables[0]
+    spec = REFORM_PARAMETERS[parameter["id"]]
+    baseline = run_sweep(household, axis)
+
+    def evaluate(value):
+        sweep = run_sweep(
+            household, axis, build_reform_overrides({parameter["id"]: value})
+        )
+        residual = [c for c in sweep["cliffs"] if c["dominant_program"] == program]
+        worst = min((c["net_drop"] for c in residual), default=0.0)
+        return sweep, residual, worst
+
+    tried = []
+    if isinstance(spec.default, bool):
+        sweep, residual, worst = evaluate(True)
+        tried.append({"value": True, "remaining_cliffs": len(residual), "worst_drop": worst})
+        chosen, chosen_sweep, healed = True, sweep, not residual
+    else:
+        candidates = [round(float(v), 2) for v in np.linspace(spec.default, spec.maximum, 6)[1:]]
+        chosen, chosen_sweep, healed = None, None, False
+        for value in candidates:
+            sweep, residual, worst = evaluate(value)
+            tried.append({"value": value, "remaining_cliffs": len(residual), "worst_drop": worst})
+            if not residual:
+                chosen, chosen_sweep, healed = value, sweep, True
+                break
+        if healed:
+            # bisect back toward the last failing value for minimality
+            lo = tried[-2]["value"] if len(tried) > 1 else float(spec.default)
+            for _ in range(2):
+                mid = round((lo + chosen) / 2, 2)
+                if mid in (lo, chosen):
+                    break
+                sweep, residual, worst = evaluate(mid)
+                tried.append({"value": mid, "remaining_cliffs": len(residual), "worst_drop": worst})
+                if residual:
+                    lo = mid
+                else:
+                    chosen, chosen_sweep = mid, sweep
+        else:
+            best = min(tried, key=lambda t: abs(t["worst_drop"]))
+            chosen = best["value"]
+            chosen_sweep, _, _ = evaluate(chosen)
+
+    return {
+        "found": True,
+        "healed": healed,
+        "program": program,
+        "parameter": {
+            "id": parameter["id"],
+            "label": spec.label,
+            "path": spec.path,
+            "default": spec.default,
+            "unit": spec.unit,
+        },
+        "minimal_value": chosen,
+        "tried": tried,
+        "baseline": baseline,
+        "reformed": chosen_sweep,
     }

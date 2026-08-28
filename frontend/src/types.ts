@@ -109,4 +109,34 @@ export type CanvasView =
   | { mode: "sweep" }
   | { mode: "ablate"; program: string; interactions: Record<string, number> }
   | { mode: "diff"; label: string; diff: DiffResult }
-  | { mode: "heatmap"; heatmap: HeatmapResult };
+  | { mode: "heatmap"; heatmap: HeatmapResult }
+  | { mode: "reform"; label: string };
+
+export interface MinimalFixAttempt {
+  value: number | boolean;
+  remaining_cliffs: number;
+  worst_drop: number;
+}
+
+export interface MinimalFixResult {
+  found: boolean;
+  healed?: boolean;
+  program: string;
+  reason?: string;
+  parameter?: {
+    id: string;
+    label: string;
+    path: string;
+    default: number | boolean;
+    unit: string;
+  };
+  minimal_value?: number | boolean;
+  tried?: MinimalFixAttempt[];
+  baseline?: SweepResult;
+  reformed?: SweepResult;
+}
+
+export interface ReformResult {
+  baseline: SweepResult;
+  reformed: SweepResult;
+}

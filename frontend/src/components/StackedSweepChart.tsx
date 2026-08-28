@@ -46,6 +46,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const selectCliff = usePeiraStore((s) => s.selectCliff);
   const trace = usePeiraStore((s) => s.trace);
   const annotations = usePeiraStore((s) => s.annotations);
+  const baselineSweep = usePeiraStore((s) => s.baselineSweep);
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverPx, setHoverPx] = useState<number | null>(null);
 
@@ -139,6 +140,18 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
             style={{ transition: "fill-opacity 300ms ease" }}
           />
         ))}
+        {/* ghost of the baseline net income while showing an ablated or
+            reformed mechanism — the before/after comparison */}
+        {baselineSweep && baselineSweep.x.length === sweep.x.length && (
+          <path
+            d={`M${baselineSweep.x.map((x, i) => `${sx(x)},${sy(baselineSweep.net_income[i])}`).join(" L")}`}
+            fill="none"
+            stroke={C.inkSecondary}
+            strokeWidth={1.2}
+            strokeDasharray="5 4"
+            opacity={0.7}
+          />
+        )}
         {/* net income top edge */}
         <path
           d={`M${sweep.x.map((x, i) => `${sx(x)},${sy(rows[rows.length - 1][i])}`).join(" L")}`}

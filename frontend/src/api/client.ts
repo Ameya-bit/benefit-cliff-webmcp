@@ -11,10 +11,9 @@ export class ApiError extends Error {}
 export async function apiPost<T>(
   path: string,
   body: unknown,
-  signal?: AbortSignal,
+  timeoutMs: number = API_TIMEOUT_MS,
 ): Promise<T> {
-  const timeout = AbortSignal.timeout(API_TIMEOUT_MS);
-  const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+  const combined = AbortSignal.timeout(timeoutMs);
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {

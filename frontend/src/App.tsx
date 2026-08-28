@@ -25,6 +25,16 @@ function CanvasArea() {
   }
   return (
     <>
+      {view.mode === "reform" && (
+        <div className="reform-banner">
+          <span>
+            <b>reformed mechanism</b> — {view.label}
+          </span>
+          <button className="probe-button inline" onClick={restoreBaseline}>
+            restore current law
+          </button>
+        </div>
+      )}
       {view.mode === "ablate" && (
         <div className="ablate-banner">
           <span>

@@ -21,6 +21,8 @@ import {
   annotate,
   runAblation,
   runDiff,
+  runEditPolicy,
+  runMinimalFix,
   runSweep,
   runSweep2D,
   runTrace,
@@ -38,6 +40,15 @@ const PROGRAM_SLUGS = [
   "eitc",
   "ctc",
   "aca",
+] as const;
+
+/** Must mirror the backend whitelist in app/policy.py — the mechanism's
+ * editable dials. trace_binding_constraint results name these ids. */
+const POLICY_PARAMETERS = [
+  "ccap_exit_smi_rate",
+  "ccap_entry_smi_rate",
+  "snap_gross_income_limit",
+  "ctc_fully_refundable",
 ] as const;
 
 const AdultSchema = z.object({
@@ -428,6 +439,115 @@ export const TOOLS: PeiraTool[] = [
         .parse(input);
       annotate(parsed.x, parsed.note, "agent");
       return { pinned: `“${parsed.note}” at ${money(parsed.x)}` };
+    },
+  },
+  {
+    name: "edit_policy",
+    description:
+      "Modify the mechanism itself: change one whitelisted policy parameter " +
+      "and re-run the sweep. The canvas morphs from current law to the " +
+      "reformed mechanism — cliffs move, shrink, or heal on screen. " +
+      "trace_binding_constraint names which parameter moves a given rule. " +
+      "This edits the simulation only, never real policy; the human can " +
+      "restore current law from the canvas banner.",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        parameter: {
+          type: "string",
+          enum: [...POLICY_PARAMETERS],
+          description:
+            "ccap_exit_smi_rate: CCAP exit limit, fraction of state median income (current 0.85, up to 2.0). " +
+            "ccap_entry_smi_rate: CCAP entry limit, same units. " +
+            "snap_gross_income_limit: SNAP gross test, multiple of poverty line (current 1.3, up to 3.0). " +
+            "ctc_fully_refundable: boolean.",
+        },
+        value: {
+          type: ["number", "boolean"],
+          description: "the new value, within the parameter's bounds",
+        },
+      },
+      required: ["parameter", "value"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({
+          parameter: z.enum(POLICY_PARAMETERS),
+          value: z.union([z.number(), z.boolean()]),
+        })
+        .parse(input);
+      const label = `${parsed.parameter} → ${parsed.value}`;
+      const result = await runEditPolicy(
+        { [parsed.parameter]: parsed.value },
+        label,
+        "agent",
+      );
+      const describe = (cliffs: { from_x: number; net_drop: number; dominant_program: string }[]) =>
+        cliffs.map((c) => `${money(c.from_x)}: ${money(c.net_drop)} (${c.dominant_program})`);
+      return {
+        edited: label,
+        cliffs_under_current_law: describe(result.baseline.cliffs),
+        cliffs_under_reform: describe(result.reformed.cliffs),
+        note: "The canvas morphed from current law to the reformed mechanism; a ghost line shows where net resources used to sit.",
+      };
+    },
+  },
+  {
+    name: "find_minimal_fix",
+    description:
+      "Search policy-space for the SMALLEST whitelisted parameter change " +
+      "that removes a cliff entirely (not merely moves it). Traces the " +
+      "cliff to its binding rule, walks that rule's editable dial outward, " +
+      "and bisects back for minimality — several reformed mechanisms are " +
+      "built, so this probe takes up to a minute. Defaults to the cliff " +
+      "selected on the canvas. The finale probe: run it when the human " +
+      "asks 'could this be fixed?'",
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        cliff_at: {
+          type: "number",
+          description:
+            "earnings point of the cliff to heal, in $. Omit to use the cliff selected on the canvas.",
+        },
+      },
+      additionalProperties: false,
+    },
+    async execute(input) {
+      const parsed = z
+        .object({ cliff_at: z.number().min(0).max(1_000_000).optional() })
+        .parse(input);
+      const selected = usePeiraStore.getState().selectedCliff;
+      const cliffAt = parsed.cliff_at ?? selected?.from_x;
+      if (cliffAt === undefined) {
+        throw new Error(
+          "no cliff given and none selected on the canvas — pass `cliff_at` or ask the human to click a cliff",
+        );
+      }
+      const result = await runMinimalFix(cliffAt, "agent");
+      if (!result.found) {
+        return {
+          healed: false,
+          program: result.program,
+          reason: result.reason,
+        };
+      }
+      return {
+        healed: result.healed,
+        parameter: `${result.parameter!.label} (${result.parameter!.id})`,
+        change: `${result.parameter!.default} → ${result.minimal_value} ${result.parameter!.unit}`,
+        search_path: result.tried!.map(
+          (t) =>
+            `${t.value}: ${t.remaining_cliffs} ${result.program} cliff(s) left` +
+            (t.worst_drop < 0 ? ` (worst ${money(t.worst_drop)})` : ""),
+        ),
+        note: result.healed
+          ? "The cliff healed on the canvas — the reformed mechanism phases the program out smoothly where the threshold used to cut it off. A ghost line shows current law."
+          : "No single whitelisted change removes it fully; the canvas shows the best attempt.",
+      };
     },
   },
 ];

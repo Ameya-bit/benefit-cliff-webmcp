@@ -8,7 +8,11 @@ the engine directly.
 
 from pydantic import BaseModel
 
-REFORM_PERIOD = "2026-01-01.2100-12-31"
+# Backdated well before the simulation year: some formulas read parameters at
+# a prior instant (e.g. Colorado CCAP reads the Oct-1-of-previous-year value
+# for Jan-Sep months), so a reform starting Jan 1 of the sim year would
+# silently miss nine months of the year.
+REFORM_PERIOD = "2024-01-01.2100-12-31"
 
 
 class PolicyParameter(BaseModel):

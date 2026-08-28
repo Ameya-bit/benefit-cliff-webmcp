@@ -11,6 +11,8 @@ import type {
   DiffResult,
   HeatmapResult,
   Household,
+  MinimalFixResult,
+  ReformResult,
   SweepAxis,
   SweepResult,
   TraceResult,
@@ -141,6 +143,65 @@ export async function runSweep2D(
       summary: `earnings × childcare cost grid (${axisX.count}×${axisY.count})`,
     });
     return heatmap;
+  });
+}
+
+export async function runEditPolicy(
+  reforms: Record<string, number | boolean>,
+  label: string,
+  source: "agent" | "human",
+): Promise<ReformResult> {
+  return probing(async () => {
+    const store = usePeiraStore.getState();
+    const axis = store.sweep?.axis ?? {
+      variable: "employment_income",
+      min: 0,
+      max: 100_000,
+      count: 101,
+    };
+    const result = await apiPost<ReformResult>(
+      "/reform",
+      { household: store.household, axis, reforms },
+      60_000, // reformed systems build in ~5s when uncached
+    );
+    // Show the baseline first so the healing morph animates from it.
+    if (!store.sweep) store.setSweep(result.baseline);
+    usePeiraStore.getState().showReform(result.reformed, result.baseline, label);
+    usePeiraStore.getState().logProbe({ source, tool: "edit_policy", summary: label });
+    return result;
+  });
+}
+
+export async function runMinimalFix(
+  cliffAt: number,
+  source: "agent" | "human",
+): Promise<MinimalFixResult> {
+  return probing(async () => {
+    const store = usePeiraStore.getState();
+    const axis = store.sweep?.axis ?? {
+      variable: "employment_income",
+      min: 0,
+      max: 100_000,
+      count: 101,
+    };
+    const result = await apiPost<MinimalFixResult>(
+      "/minimal_fix",
+      { household: store.household, axis, cliff_at: cliffAt },
+      180_000, // policy-space search: several ~6s reform builds
+    );
+    if (result.found && result.reformed && result.baseline) {
+      const label = `${result.parameter!.label}: ${result.parameter!.default} → ${result.minimal_value}`;
+      if (!store.sweep) store.setSweep(result.baseline);
+      usePeiraStore.getState().showReform(result.reformed, result.baseline, label);
+    }
+    usePeiraStore.getState().logProbe({
+      source,
+      tool: "find_minimal_fix",
+      summary: result.found
+        ? `${result.parameter!.id}: ${result.minimal_value} (${result.healed ? "healed" : "best effort"})`
+        : `no whitelisted fix for ${result.program}`,
+    });
+    return result;
   });
 }
 

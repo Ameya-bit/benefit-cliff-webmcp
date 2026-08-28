@@ -42,6 +42,11 @@ interface PeiraState {
     program: string,
     interactions: Record<string, number>,
   ) => void;
+  showReform: (
+    reformedSweep: SweepResult,
+    baseline: SweepResult,
+    label: string,
+  ) => void;
   restoreBaseline: () => void;
   setView: (view: CanvasView) => void;
   setCurrentIndex: (index: number | null) => void;
@@ -83,6 +88,14 @@ export const usePeiraStore = create<PeiraState>((set) => ({
       sweep: ablatedSweep,
       baselineSweep: baseline,
       view: { mode: "ablate", program, interactions },
+      selectedCliff: null,
+      trace: null,
+    }),
+  showReform: (reformedSweep, baseline, label) =>
+    set({
+      sweep: reformedSweep,
+      baselineSweep: baseline,
+      view: { mode: "reform", label },
       selectedCliff: null,
       trace: null,
     }),
