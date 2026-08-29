@@ -5,12 +5,12 @@ import { AnnotationPins } from "../viz/AnnotationPins";
 import { CHART_CHROME as C } from "../viz/palette";
 
 const W = 860;
-const H = 420;
-const M = { top: 30, right: 16, bottom: 34, left: 60 };
+const H = 290;
+const M = { top: 22, right: 14, bottom: 28, left: 52 };
 const PLOT_W = W - M.left - M.right;
 const PLOT_H = H - M.top - M.bottom;
 
-const VARIANT_COLOR = "#86b6ef";
+const VARIANT_COLOR = "#1c5cab";
 
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
@@ -74,7 +74,7 @@ export function DiffChart({ diff, label }: { diff: DiffResult; label: string }) 
             </text>
           </g>
         ))}
-        <path d={gap} fill="rgba(134, 182, 239, 0.14)" />
+        <path d={gap} fill="rgba(28, 92, 171, 0.08)" />
         <path d={line(a)} fill="none" stroke={C.inkPrimary} strokeWidth={1.8} />
         <path d={line(b)} fill="none" stroke={VARIANT_COLOR} strokeWidth={1.8} strokeDasharray="6 4" />
         {idx !== null && (

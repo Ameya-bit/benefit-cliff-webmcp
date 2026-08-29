@@ -3,8 +3,8 @@ import type { HeatmapResult } from "../types";
 import { CHART_CHROME as C } from "../viz/palette";
 
 const W = 860;
-const H = 440;
-const M = { top: 24, right: 16, bottom: 40, left: 64 };
+const H = 330;
+const M = { top: 24, right: 14, bottom: 36, left: 56 };
 
 const fmtK = (v: number) => `$${Math.round(v / 1000)}k`;
 const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;

@@ -1,12 +1,14 @@
+import { useRef } from "react";
 import { usePeiraStore } from "./state/store";
+import { ConnectorLayer } from "./viz/ConnectorLayer";
 import { StackedSweepChart } from "./components/StackedSweepChart";
 import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
-import { HouseholdCard } from "./components/HouseholdCard";
-import { ProbeControls } from "./components/ProbeControls";
+import { HouseholdBar } from "./components/HouseholdBar";
+import { MoneyFlow } from "./components/MoneyFlow";
 import { ScenarioLibrary } from "./components/ScenarioLibrary";
 import { StatusBanners } from "./components/StatusBanners";
-import { PROGRAM_LAYERS } from "./viz/palette";
+import { programLabel } from "./viz/palette";
 import "./App.css";
 
 const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
@@ -18,31 +20,31 @@ function CanvasArea() {
 
   if (view.mode === "heatmap") return <HeatmapChart heatmap={view.heatmap} />;
   if (view.mode === "diff") return <DiffChart diff={view.diff} label={view.label} />;
-  if (!sweep) return <ScenarioLibrary />;
+  if (!sweep) return null;
   return (
     <>
       {view.mode === "reform" && (
-        <div className="reform-banner">
+        <div className="mode-banner reform-banner">
           <span>
-            <b>reformed mechanism</b> — {view.label}
+            <b>changed rules</b> — {view.label} · dashed line is current law
           </span>
-          <button className="probe-button inline" onClick={restoreBaseline}>
-            restore current law
+          <button className="btn" onClick={restoreBaseline}>
+            back to current law
           </button>
         </div>
       )}
       {view.mode === "ablate" && (
-        <div className="ablate-banner">
+        <div className="mode-banner ablate-banner">
           <span>
-            <b>{view.program}</b> ablated —{" "}
+            <b>without {programLabel(view.program)}</b>
             {Object.keys(view.interactions).length > 0
-              ? `also moved: ${Object.entries(view.interactions)
-                  .map(([slug, v]) => `${slug} (${fmt(v)})`)
+              ? ` — also moved: ${Object.entries(view.interactions)
+                  .map(([slug, v]) => `${programLabel(slug)} (${fmt(v)})`)
                   .join(", ")}`
-              : "no other program depends on it"}
+              : " — nothing else depends on it"}
           </span>
-          <button className="probe-button inline" onClick={restoreBaseline}>
-            restore baseline
+          <button className="btn" onClick={restoreBaseline}>
+            restore
           </button>
         </div>
       )}
@@ -51,99 +53,83 @@ function CanvasArea() {
   );
 }
 
-function MechanismInspector() {
-  const trace = usePeiraStore((s) => s.trace);
-  const setTrace = usePeiraStore((s) => s.setTrace);
-  if (!trace) return null;
-  const losses = Object.entries(trace.program_deltas)
-    .filter(([, v]) => Math.abs(v) > 1)
-    .sort(([, a], [, b]) => a - b);
-  return (
-    <div className="inspector">
-      <h2>Mechanism inspector</h2>
-      <div className="tt-title">
-        crossing {fmt(trace.at)} → {fmt(trace.at + trace.step)}
-      </div>
-      <div className="tt-row">
-        net resources <b className={trace.net_income_delta < 0 ? "neg" : "pos"}>{fmt(trace.net_income_delta)}</b>
-      </div>
-      {losses.map(([slug, v]) => {
-        const layer = PROGRAM_LAYERS.find((l) => l.slug === slug);
-        return (
-          <div key={slug} className={`tt-row ${slug === trace.dominant_program ? "dominant" : ""}`}>
-            <span className="swatch" style={{ background: layer?.color }} />
-            {layer?.label ?? slug}
-            <b className={v < 0 ? "neg" : "pos"}>{fmt(v)}</b>
-          </div>
-        );
-      })}
-      {trace.binding_rules.map((rule) => (
-        <div key={rule.variable + (rule.person ?? "")} className="binding-rule">
-          <div className="rule-name">{rule.rule}</div>
-          <div className="muted small">
-            {rule.person ? `${rule.person.replace("_", " ")}: ` : ""}
-            {String(rule.before)} → {String(rule.after)}
-            {rule.editable_parameter && (
-              <>
-                {" · dial: "}
-                <code>{rule.editable_parameter.id}</code> ={" "}
-                {String(rule.editable_parameter.current_value)}
-              </>
-            )}
-          </div>
-        </div>
-      ))}
-      <button className="probe-button inline" onClick={() => setTrace(null)}>
-        clear highlight
-      </button>
-    </div>
-  );
-}
-
 export default function App() {
-  const probeLog = usePeiraStore((s) => s.probeLog);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const sweep = usePeiraStore((s) => s.sweep);
+  const flowLabel = usePeiraStore((s) => {
+    if (s.view.mode === "ablate") return `without ${programLabel(s.view.program)}`;
+    if (s.view.mode === "reform") return "under the changed rules";
+    return null;
+  });
+  const earnings = usePeiraStore((s) =>
+    s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
+  );
+  // The money flow is the slice of the map at the cursor; its header names
+  // the income it is currently showing.
+  const cursorX = usePeiraStore((s) =>
+    s.currentIndex !== null && s.sweep && s.currentIndex < s.sweep.x.length
+      ? s.sweep.x[s.currentIndex]
+      : null,
+  );
 
   return (
-    <div className="bench">
-      <header className="bench-header">
-        <h1>Peira</h1>
-        <p className="tagline">
-          probe the benefits mechanism — πεῖρα, the root of <em>empirical</em>
-        </p>
+    <div className="app">
+      <header>
+        <div className="mark">
+          Peira
+          <small>
+            see what a raise <span className="serif-it">really</span> does
+          </small>
+        </div>
+        <HouseholdBar />
+        <div className="disclaimer">Model estimates — not benefits advice</div>
       </header>
 
-      <aside className="panel household-panel">
-        <h2>Household</h2>
-        <HouseholdCard />
-        <ProbeControls />
-        <p className="muted small">
-          Model estimates from policyengine-us — not benefits advice.
-        </p>
-      </aside>
-
-      <main className="panel canvas-panel">
-        <StatusBanners />
-        <CanvasArea />
-      </main>
-
-      <aside className="panel probe-log-panel">
-        <MechanismInspector />
-        <h2>Probe log</h2>
-        {probeLog.length === 0 && <p className="muted">No probes yet.</p>}
-        <ul>
-          {probeLog.map((entry) => (
-            <li key={entry.id}>
-              <span className={`source source-${entry.source}`}>
-                {entry.source}
-              </span>
-              <div>
-                <code>{entry.tool}</code>
-                <div className="muted small">{entry.summary}</div>
+      <div className="main" ref={mainRef}>
+        {!sweep ? (
+          <div className="empty-center">
+            <StatusBanners />
+            <ScenarioLibrary />
+          </div>
+        ) : (
+          <>
+            <StatusBanners />
+            <section className="detail-zone">
+              <div className="flow-card">
+                <div className="sec-head">
+                  <span className="eyebrow">How the money flows</span>
+                  <span className="at">
+                    {cursorX !== null && Math.round(cursorX) !== Math.round(earnings) ? (
+                      <>
+                        at the line on the map — <b className="cursor-inc">{fmt(cursorX)}</b>
+                      </>
+                    ) : (
+                      <>
+                        at this household’s earnings — <b>{fmt(earnings)}</b>
+                      </>
+                    )}
+                    {flowLabel && <em> · {flowLabel}</em>}
+                  </span>
+                  <span className="flow-hint">
+                    slide or click on the map below to look at any income
+                  </span>
+                </div>
+                <div className="svg-wrap">
+                  <MoneyFlow />
+                </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      </aside>
+            </section>
+
+            <section className="map-zone">
+              <div className="stage">
+                <CanvasArea />
+              </div>
+            </section>
+
+            <ConnectorLayer container={mainRef} />
+          </>
+        )}
+      </div>
     </div>
   );
 }

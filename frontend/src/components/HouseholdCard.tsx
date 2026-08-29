@@ -78,8 +78,13 @@ export function HouseholdCard() {
     const summary = describeEdit(store.household, draft);
     store.setHousehold(draft);
     store.logProbe({ source: "human", tool: "set_household", summary });
+    // Re-sweep the active range — or run the first sweep, so applying a
+    // fresh household immediately generates the flow and the map.
     const axis = store.sweep?.axis;
-    if (axis) void runSweep({ min: axis.min, max: axis.max }, "human").catch(() => {});
+    void runSweep(
+      axis ? { min: axis.min, max: axis.max } : { min: 0, max: 100_000 },
+      "human",
+    ).catch(() => {});
   };
 
   const num = (value: string, fallback: number) => {

@@ -1,22 +1,38 @@
 :root {
-  color-scheme: dark;
-  /* dark-committed for now; chart chrome tokens from the validated palette */
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --border: rgba(255, 255, 255, 0.1);
-  --ink-primary: #ffffff;
-  --ink-secondary: #c3c2b7;
-  --ink-muted: #898781;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+  /* Light-committed. Quiet editorial chrome: hairlines over boxes. */
+  --page: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --border: #ececec;
+  --border-2: #dddddd;
+  --ink-primary: #171717;
+  --ink-secondary: #666666;
+  --ink-muted: #999999;
+  --accent: #2563eb;
+  --agent: #6d5bd0;
+  --human: #047857;
+  --cliff: #cc3b3b;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 body {
   margin: 0;
   background: var(--page);
   color: var(--ink-primary);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 code {
   font-size: 0.85em;
-  color: #b3a6f0;
+  color: #5745c9;
+}
+
+.serif-it {
+  font-family: "Newsreader", Georgia, serif;
+  font-style: italic;
+  font-size: 1.09em;
+  letter-spacing: 0.005em;
 }

@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
-import type { Cliff, SweepResult } from "../types";
+import type { SweepResult } from "../types";
 import {
   BASE_LAYER,
   CHART_CHROME as C,
@@ -10,11 +10,16 @@ import {
 import { AnnotationPins } from "../viz/AnnotationPins";
 import { useAnimatedMatrix } from "../viz/useAnimatedMatrix";
 
-const W = 860;
-const H = 420;
-const M = { top: 68, right: 16, bottom: 34, left: 60 };
+// Wide aspect: the map is the ground of the page (roughly the bottom half)
+// and the detail cards grow out of it. Rendered near 1:1 scale, so in-chart
+// type is sized like page type. Geometry is exported for the connector beams.
+const W = 1240;
+const H = 320;
+const M = { top: 46, right: 14, bottom: 30, left: 56 };
 const PLOT_W = W - M.left - M.right;
 const PLOT_H = H - M.top - M.bottom;
+
+export const CHART_GEOM = { W, H, M };
 
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
@@ -47,8 +52,18 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const trace = usePeiraStore((s) => s.trace);
   const annotations = usePeiraStore((s) => s.annotations);
   const baselineSweep = usePeiraStore((s) => s.baselineSweep);
+  const householdEarnings = usePeiraStore((s) =>
+    s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
+  );
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverPx, setHoverPx] = useState<number | null>(null);
+  // A click on the plot pins the cursor: the money flow below keeps showing
+  // that income after the pointer leaves. Click again (near the pin) to release.
+  const [pinnedIdx, setPinnedIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    setPinnedIdx(null);
+  }, [sweep]);
 
   const target = useMemo(() => stackBoundaries(sweep), [sweep]);
   const rows = useAnimatedMatrix(target);
@@ -69,36 +84,56 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
     return `M${fwd} L${back} Z`;
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const indexAtPointer = (e: React.PointerEvent | React.MouseEvent): number | null => {
     const rect = svgRef.current!.getBoundingClientRect();
     const px = ((e.clientX - rect.left) / rect.width) * W;
     const frac = (px - M.left) / PLOT_W;
     const index = Math.round(frac * (sweep.x.length - 1));
-    if (index >= 0 && index < sweep.x.length) {
+    return index >= 0 && index < sweep.x.length ? index : null;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * W;
+    const index = indexAtPointer(e);
+    if (index !== null) {
       setCurrentIndex(index);
       setHoverPx(px);
     }
   };
   const onPointerLeave = () => {
-    setCurrentIndex(null);
+    setCurrentIndex(pinnedIdx);
     setHoverPx(null);
+  };
+  const onPlotClick = (e: React.MouseEvent) => {
+    const index = indexAtPointer(e);
+    if (index === null) return;
+    if (pinnedIdx !== null && Math.abs(index - pinnedIdx) <= 1) {
+      setPinnedIdx(null);
+      return;
+    }
+    setPinnedIdx(index);
+    setCurrentIndex(index);
   };
 
   const yTicks = useMemo(() => {
-    const step = Math.pow(10, Math.floor(Math.log10(yMax))) / 2;
+    let step = Math.pow(10, Math.floor(Math.log10(yMax))) / 2;
+    while (yMax / step > 9) step *= 2;
     const ticks = [];
     for (let v = 0; v <= yMax; v += step) ticks.push(v);
     return ticks;
   }, [yMax]);
   const xTicks = useMemo(() => {
     const span = xMax - xMin;
-    const step = span > 60_000 ? 20_000 : 10_000;
+    const step = span > 120_000 ? 20_000 : 10_000;
     const ticks = [];
     for (let v = Math.ceil(xMin / step) * step; v <= xMax; v += step) ticks.push(v);
     return ticks;
   }, [xMin, xMax]);
 
   const idx = currentIndex;
+  // net_drop is negative (a loss); the worst cliff is the most negative.
+  const worstDrop = Math.min(...sweep.cliffs.map((c) => c.net_drop), 0);
 
   return (
     <div className="chart-wrap">
@@ -108,24 +143,25 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         className="stacked-chart"
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
+        onClick={onPlotClick}
       >
         {/* grid */}
         {yTicks.map((v) => (
           <g key={v}>
             <line x1={M.left} y1={sy(v)} x2={W - M.right} y2={sy(v)} stroke={C.grid} strokeWidth={1} />
-            <text x={M.left - 8} y={sy(v) + 4} textAnchor="end" fontSize={11} fill={C.inkMuted}>
+            <text x={M.left - 7} y={sy(v) + 4} textAnchor="end" fontSize={13} fill={C.inkSecondary}>
               {fmtK(v)}
             </text>
           </g>
         ))}
         {xTicks.map((v) => (
-          <text key={v} x={sx(v)} y={H - M.bottom + 18} textAnchor="middle" fontSize={11} fill={C.inkMuted}>
+          <text key={v} x={sx(v)} y={H - M.bottom + 19} textAnchor="middle" fontSize={13} fill={C.inkSecondary}>
             {fmtK(v)}
           </text>
         ))}
 
         {/* base layer: earnings after taxes */}
-        <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill={BASE_LAYER.color} stroke={C.surface} strokeWidth={2} />
+        <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill={BASE_LAYER.color} fillOpacity={0.55} stroke={C.surface} strokeWidth={2} />
         {/* program layers; a live trace dims everything but the binding one */}
         {PROGRAM_LAYERS.map((layer, k) => (
           <path
@@ -133,7 +169,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
             d={areaPath(rows[k], rows[k + 1])}
             fill={layer.color}
             fillOpacity={
-              trace ? (trace.dominant_program === layer.slug ? 0.95 : 0.18) : 0.82
+              trace ? (trace.dominant_program === layer.slug ? 0.92 : 0.15) : 0.82
             }
             stroke={C.surface}
             strokeWidth={2}
@@ -157,48 +193,96 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           d={`M${sweep.x.map((x, i) => `${sx(x)},${sy(rows[rows.length - 1][i])}`).join(" L")}`}
           fill="none"
           stroke={C.inkPrimary}
-          strokeWidth={1.5}
+          strokeWidth={2.2}
         />
 
         {/* axis baseline */}
         <line x1={M.left} y1={sy(Math.max(0, yMin))} x2={W - M.right} y2={sy(Math.max(0, yMin))} stroke={C.axis} strokeWidth={1} />
 
-        {/* cliff badges */}
+        {/* "you are here": the household's actual earnings, anchored to the
+            net-income line with the number spelled out */}
+        {householdEarnings >= xMin && householdEarnings <= xMax && (() => {
+          const youX = sx(householdEarnings);
+          const youIdx = sweep.x.reduce(
+            (best, xv, i) =>
+              Math.abs(xv - householdEarnings) < Math.abs(sweep.x[best] - householdEarnings)
+                ? i
+                : best,
+            0,
+          );
+          const youY = sy(rows[rows.length - 1][youIdx]);
+          return (
+            <g pointerEvents="none">
+              <line
+                x1={youX}
+                y1={M.top - 4}
+                x2={youX}
+                y2={H - M.bottom}
+                stroke="#2563eb"
+                strokeWidth={1.6}
+                opacity={0.9}
+              />
+              <circle cx={youX} cy={youY} r={5.5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
+              <text
+                x={youX}
+                y={M.top - 10}
+                textAnchor="middle"
+                fontSize={13}
+                fontWeight={600}
+                fill="#2563eb"
+                stroke="#ffffff"
+                strokeWidth={3.5}
+                paintOrder="stroke"
+              >
+                you — {fmtK(householdEarnings)}
+              </text>
+            </g>
+          );
+        })()}
+
+        {/* cliff badges — only the worst cliff gets the filled pill */}
         {sweep.cliffs.map((cliff, i) => {
           const cx = sx(cliff.from_x);
           const topY = sy(rows[rows.length - 1][sweep.x.indexOf(cliff.from_x)]);
-          const badgeY = 16 + (i % 3) * 19;
+          const badgeY = 12 + (i % 2) * 18;
           const isSelected = selectedCliff?.from_x === cliff.from_x;
+          const isWorst = cliff.net_drop === worstDrop;
+          const pill = isWorst || isSelected;
           return (
             <g
               key={cliff.from_x}
               className={`cliff-badge${isSelected ? " selected" : ""}`}
-              onClick={() => selectCliff(isSelected ? null : cliff, "human")}
+              onClick={(e) => {
+                e.stopPropagation();
+                selectCliff(isSelected ? null : cliff, "human");
+              }}
             >
               {/* generous invisible hit area — the badge is a control */}
-              <rect x={cx - 34} y={badgeY - 12} width={68} height={20} fill="transparent" />
-              <rect
-                className="badge-pill"
-                x={cx - 32}
-                y={badgeY - 11}
-                width={64}
-                height={17}
-                rx={8.5}
-                fill={isSelected ? CLIFF_COLOR : "rgba(208,59,59,0.14)"}
-                stroke={CLIFF_COLOR}
-                strokeWidth={isSelected ? 1.5 : 1}
-              />
-              <line x1={cx} y1={badgeY + 6} x2={cx} y2={topY} stroke={CLIFF_COLOR} strokeWidth={1} strokeDasharray="3 3" />
+              <rect x={cx - 38} y={badgeY - 12} width={76} height={23} fill="transparent" />
+              <line x1={cx} y1={badgeY + 10} x2={cx} y2={topY} stroke={CLIFF_COLOR} strokeWidth={0.9} strokeDasharray="3 3" opacity={0.55} />
               <circle cx={cx} cy={topY} r={4} fill={CLIFF_COLOR} />
+              {pill && (
+                <rect
+                  className="badge-pill"
+                  x={cx - 36}
+                  y={badgeY - 10.5}
+                  width={72}
+                  height={21}
+                  rx={10.5}
+                  fill={isSelected ? CLIFF_COLOR : "rgba(204,59,59,0.08)"}
+                  stroke={CLIFF_COLOR}
+                  strokeWidth={isSelected ? 1.4 : 1}
+                />
+              )}
               <text
                 x={cx}
-                y={badgeY + 2}
+                y={badgeY + 4.5}
                 textAnchor="middle"
-                fontSize={10.5}
+                fontSize={12.5}
                 fontWeight={600}
-                fill={isSelected ? "#ffffff" : "#e8908f"}
+                fill={isSelected ? "#ffffff" : CLIFF_COLOR}
               >
-                ▼ {fmt(cliff.net_drop)}
+                ▼ {fmtK(Math.abs(cliff.net_drop))}
               </text>
             </g>
           );
@@ -232,6 +316,33 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           }}
         />
 
+        {/* pinned cursor: the income the money flow below is showing */}
+        {pinnedIdx !== null && (
+          <g pointerEvents="none">
+            <line
+              x1={sx(sweep.x[pinnedIdx])}
+              y1={M.top}
+              x2={sx(sweep.x[pinnedIdx])}
+              y2={H - M.bottom}
+              stroke={C.inkPrimary}
+              strokeWidth={1.4}
+            />
+            <text
+              x={sx(sweep.x[pinnedIdx])}
+              y={H - M.bottom - 8}
+              textAnchor="middle"
+              fontSize={12}
+              fontWeight={600}
+              fill={C.inkPrimary}
+              stroke="#ffffff"
+              strokeWidth={3.5}
+              paintOrder="stroke"
+            >
+              viewing {fmtK(sweep.x[pinnedIdx])} · click to release
+            </text>
+          </g>
+        )}
+
         {/* crosshair */}
         {idx !== null && (
           <line x1={sx(sweep.x[idx])} y1={M.top} x2={sx(sweep.x[idx])} y2={H - M.bottom} stroke={C.inkSecondary} strokeWidth={1} strokeDasharray="2 3" />
@@ -245,7 +356,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           style={{ left: `${(Math.min(hoverPx, W - 220) / W) * 100}%` }}
         >
           <div className="tt-title">
-            earnings {fmt(sweep.x[idx])} · net {fmt(sweep.net_income[idx])}
+            earnings {fmt(sweep.x[idx])} · keeps {fmt(sweep.net_income[idx])}
           </div>
           {[...PROGRAM_LAYERS].reverse().map((layer) => {
             const v = sweep.programs[layer.slug]?.[idx] ?? 0;
@@ -274,39 +385,6 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         ))}
       </div>
 
-      {/* selected cliff readout, or the affordance hint */}
-      {selectedCliff ? (
-        <CliffReadout cliff={selectedCliff} />
-      ) : (
-        sweep.cliffs.length > 0 && (
-          <p className="muted small hint">
-            Click a <span className="cliff-hint">▼ cliff badge</span> to select
-            it — the agent's trace and fix probes target the selected cliff.
-          </p>
-        )
-      )}
-    </div>
-  );
-}
-
-function CliffReadout({ cliff }: { cliff: Cliff }) {
-  const deltas = Object.entries(cliff.program_deltas)
-    .filter(([, v]) => Math.abs(v) > 1)
-    .sort(([, a], [, b]) => a - b);
-  return (
-    <div className="cliff-readout">
-      <div className="tt-title">
-        Crossing {fmt(cliff.from_x)} → {fmt(cliff.to_x)}: net {fmt(cliff.net_drop)}
-      </div>
-      {deltas.map(([slug, v]) => {
-        const layer = PROGRAM_LAYERS.find((l) => l.slug === slug);
-        return (
-          <div key={slug} className="tt-row">
-            <span className="swatch" style={{ background: layer?.color ?? C.inkMuted }} />
-            {layer?.label ?? slug} <b className={v < 0 ? "neg" : "pos"}>{fmt(v)}</b>
-          </div>
-        );
-      })}
     </div>
   );
 }

@@ -6,6 +6,7 @@
 
 import { apiPost } from "../api/client";
 import { usePeiraStore } from "../state/store";
+import { programLabel } from "../viz/palette";
 import type {
   AblateResult,
   DiffResult,
@@ -17,6 +18,9 @@ import type {
   SweepResult,
   TraceResult,
 } from "../types";
+
+const fmtK = (v: number) =>
+  Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
 
 async function probing<T>(work: () => Promise<T>): Promise<T> {
   const store = usePeiraStore.getState();
@@ -52,6 +56,11 @@ export async function runSweep(
       tool: "sweep",
       summary: `$${range.min.toLocaleString()}–$${range.max.toLocaleString()}: ${sweep.cliffs.length} cliff(s)`,
     });
+    store.pushGalleryFromCurrent(
+      "sweep",
+      `Income map ${fmtK(range.min)}–${fmtK(range.max)}`,
+      source,
+    );
     return sweep;
   });
 }
@@ -84,6 +93,7 @@ export async function runAblation(
       tool: "ablate_program",
       summary: `${program} knocked out — ${Object.keys(result.interactions).length} other program(s) moved`,
     });
+    store.pushGalleryFromCurrent("ablate", `Without ${programLabel(program)}`, source);
     return result;
   });
 }
@@ -108,6 +118,7 @@ export async function runDiff(
     });
     store.setView({ mode: "diff", label, diff });
     store.logProbe({ source, tool: "diff_scenarios", summary: label });
+    store.pushGalleryFromCurrent("diff", `What if: ${label}`, source);
     return diff;
   });
 }
@@ -150,6 +161,7 @@ export async function runSweep2D(
       tool: "sweep_2d",
       summary: `earnings × childcare cost grid (${axisX.count}×${axisY.count})`,
     });
+    store.pushGalleryFromCurrent("heatmap", "Earnings × childcare map", source);
     return heatmap;
   });
 }
@@ -176,6 +188,7 @@ export async function runEditPolicy(
     if (!store.sweep) store.setSweep(result.baseline);
     usePeiraStore.getState().showReform(result.reformed, result.baseline, label);
     usePeiraStore.getState().logProbe({ source, tool: "edit_policy", summary: label });
+    usePeiraStore.getState().pushGalleryFromCurrent("reform", `Rule change: ${label}`, source);
     return result;
   });
 }
@@ -201,6 +214,11 @@ export async function runMinimalFix(
       const label = `${result.parameter!.label}: ${result.parameter!.default} → ${result.minimal_value}`;
       if (!store.sweep) store.setSweep(result.baseline);
       usePeiraStore.getState().showReform(result.reformed, result.baseline, label);
+      usePeiraStore.getState().pushGalleryFromCurrent(
+        "reform",
+        result.healed ? `Cliff healed: ${label}` : `Best effort: ${label}`,
+        source,
+      );
     }
     usePeiraStore.getState().logProbe({
       source,

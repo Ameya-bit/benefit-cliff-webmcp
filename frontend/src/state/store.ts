@@ -9,14 +9,29 @@ import type {
   TraceResult,
 } from "../types";
 
-/** The reference scenario: a Denver single parent already receiving CCAP,
- * weighing a raise. Every demo opens here unless the agent or human changes it. */
+/** The bench starts empty: one adult, no income, no kids. The human fills
+ * the card (or loads a preset), the agent fills it via set_household — the
+ * first Apply/preset/probe generates the flow and the map. */
 export const DEFAULT_HOUSEHOLD: Household = {
   state: "CO",
-  adults: [{ age: 30, employment_income: 50_000, weekly_work_hours: 40 }],
-  children: [{ age: 3, yearly_childcare_expenses: 15_000 }],
-  receiving_childcare_subsidy: true,
+  adults: [{ age: 30, employment_income: 0, weekly_work_hours: 40 }],
+  children: [],
+  receiving_childcare_subsidy: false,
 };
+
+/** One reopenable result in the "Explored so far" rail — the lab notebook.
+ * Snapshots the canvas state a probe produced, so the human can flip back. */
+export interface GalleryEntry {
+  id: number;
+  kind: "sweep" | "ablate" | "reform" | "diff" | "heatmap";
+  title: string;
+  source: "agent" | "human";
+  sweep: SweepResult | null;
+  baselineSweep: SweepResult | null;
+  view: CanvasView;
+}
+
+const MAX_GALLERY = 12;
 
 interface PeiraState {
   household: Household;
@@ -62,6 +77,20 @@ interface PeiraState {
   setProbeError: (probeError: string | null) => void;
   setWebmcpAvailable: (webmcpAvailable: boolean) => void;
   logProbe: (entry: Omit<ProbeLogEntry, "id" | "timestamp">) => void;
+  /** Program the explainer panel focuses on (clicked in the money flow). */
+  focusProgram: string | null;
+  setFocusProgram: (slug: string | null) => void;
+  /** Reopenable probe results, oldest first. */
+  gallery: GalleryEntry[];
+  activeGalleryId: number | null;
+  /** Snapshot the canvas state just produced by a probe into the rail. */
+  pushGalleryFromCurrent: (
+    kind: GalleryEntry["kind"],
+    title: string,
+    source: "agent" | "human",
+  ) => void;
+  /** Reopen an earlier result (human flipping back through the notebook). */
+  restoreGallery: (id: number) => void;
   /** Log id up to which the agent has already been told about human actions. */
   lastAgentSeenLogId: number;
   /** Human-sourced log entries the agent hasn't seen yet (oldest first);
@@ -150,6 +179,41 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   setWebmcpAvailable: (webmcpAvailable) => set({ webmcpAvailable }),
   logProbe: (entry) =>
     set((state) => ({ probeLog: [logEntry(entry), ...state.probeLog] })),
+  focusProgram: null,
+  setFocusProgram: (focusProgram) => set({ focusProgram }),
+  gallery: [],
+  activeGalleryId: null,
+  pushGalleryFromCurrent: (kind, title, source) => {
+    const id = ++probeId;
+    set((state) => ({
+      gallery: [
+        ...state.gallery,
+        {
+          id,
+          kind,
+          title,
+          source,
+          sweep: state.sweep,
+          baselineSweep: state.baselineSweep,
+          view: state.view,
+        },
+      ].slice(-MAX_GALLERY),
+      activeGalleryId: id,
+    }));
+  },
+  restoreGallery: (id) =>
+    set((state) => {
+      const entry = state.gallery.find((e) => e.id === id);
+      if (!entry) return {};
+      return {
+        sweep: entry.sweep,
+        baselineSweep: entry.baselineSweep,
+        view: entry.view,
+        selectedCliff: null,
+        trace: null,
+        activeGalleryId: id,
+      };
+    }),
   lastAgentSeenLogId: 0,
   digestHumanActions: () => {
     const { probeLog, lastAgentSeenLogId } = get();
