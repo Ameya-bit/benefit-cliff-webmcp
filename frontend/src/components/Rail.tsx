@@ -81,6 +81,14 @@ function Thumb({ entry }: { entry: GalleryEntry }) {
   );
 }
 
+/** One-line gist: what this snapshot found. */
+function subtitle(entry: GalleryEntry): string {
+  if (entry.kind === "heatmap") return "safety grid";
+  if (entry.view.mode === "diff") return "vs today";
+  const n = entry.sweep?.cliffs.length ?? 0;
+  return `${n} cliff${n === 1 ? "" : "s"}`;
+}
+
 export function Rail() {
   const gallery = usePeiraStore((s) => s.gallery);
   const activeId = usePeiraStore((s) => s.activeGalleryId);
@@ -102,14 +110,15 @@ export function Rail() {
           className={`thumb${entry.id === activeId ? " selected" : ""}`}
           disabled={isProbing}
           onClick={() => restoreGallery(entry.id)}
-          title="Reopen this result"
+          title={`${entry.title} — reopen this result`}
         >
           <Thumb entry={entry} />
-          <span className="t-title">
-            {entry.title}{" "}
-            <span className={`voice ${entry.source === "agent" ? "agent" : "human"}`}>
-              · {entry.source === "agent" ? "agent" : "you"}
+          <span className="t-title">{entry.title}</span>
+          <span className="t-meta">
+            <span className={`voice-badge ${entry.source}`}>
+              {entry.source === "agent" ? "agent" : "you"}
             </span>
+            <span className="t-sub">{subtitle(entry)}</span>
           </span>
         </button>
       ))}

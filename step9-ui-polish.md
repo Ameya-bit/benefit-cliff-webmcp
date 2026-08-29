@@ -176,6 +176,14 @@ Next when re-adding panels: reading panel returns as a second anchored modal
 - [x] Verified: tsc, vite build (101 kB gz), probe-e2e green (all tools +
       6 presets), manual arc select→trace→dial-heal→restore→what-if→tray.
 
+**9.1f (commit 7da8914):** true 50/50 vertical split — `.app` locks to 100vh,
+both zones flex equally, SVGs fill their zones (sweep pinned to the ground via
+preserveAspectRatio xMidYMax; pointer + beam math is letterbox-aware). Sweep
+svg now has a distinct `.sweep-map` class so beams never attach to diff/heatmap
+(they share `.stacked-chart` styling). Known trade-off: on short-and-wide
+windows the map letterboxes with side gutters to keep ~1:1 type; an adaptive
+viewBox (H from the box aspect) is the post-deadline fix if it bothers anyone.
+
 Still open from the master list: diff/heatmap visual pass on this canvas,
 annotation-pin styling + snapshot who-tags polish (rest of 9.2), chart aria +
 contrast audit (9.6), cold-open ghost household (9.6), ChatGPT-desktop

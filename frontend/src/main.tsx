@@ -12,6 +12,12 @@ void registerPeiraTools().then((registered) =>
   usePeiraStore.getState().setWebmcpAvailable(registered),
 );
 
+// Dev-only console handle for driving the bench without an agent attached
+// (e.g. peira.getState().addAnnotation(...) to rehearse pin rendering).
+if (import.meta.env.DEV) {
+  (window as unknown as { peira: typeof usePeiraStore }).peira = usePeiraStore;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
