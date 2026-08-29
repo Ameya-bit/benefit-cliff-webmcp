@@ -51,8 +51,8 @@ export function ScenarioLibrary() {
         <p className="agent-hint">
           No agent is attached to this page. Open it in ChatGPT&rsquo;s
           browser (or Chrome with the WebMCP flag) to let an agent run the
-          probes — or drive everything yourself with the controls on the
-          left.
+          probes — or load a scenario and explore by hand: scrub the map,
+          click cliffs, try the what-if buttons.
         </p>
       )}
       <div className="scenario-grid">

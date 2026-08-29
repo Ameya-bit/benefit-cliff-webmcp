@@ -163,6 +163,9 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   selectCliff: (cliff, source) =>
     set((state) => ({
       selectedCliff: cliff,
+      // A trace explains ONE spot; keep it only if it was run at this cliff,
+      // else the old rule/dimming bleeds into the new selection.
+      trace: cliff && state.trace && state.trace.at !== cliff.from_x ? null : state.trace,
       probeLog: cliff
         ? [
             logEntry({

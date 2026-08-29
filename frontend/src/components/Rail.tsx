@@ -90,15 +90,12 @@ export function Rail() {
   // newest first
   const entries = [...gallery].reverse();
 
+  // The tray only exists once there is history to reopen.
+  if (entries.length < 2) return null;
+
   return (
     <div className="rail">
       <span className="eyebrow">Explored so far</span>
-      {entries.length === 0 && (
-        <p className="rail-empty">
-          Every map, comparison, and what-if you or the agent run lands here —
-          click one to reopen it.
-        </p>
-      )}
       {entries.map((entry) => (
         <button
           key={entry.id}

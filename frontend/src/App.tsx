@@ -4,8 +4,12 @@ import { ConnectorLayer } from "./viz/ConnectorLayer";
 import { StackedSweepChart } from "./components/StackedSweepChart";
 import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
+import { ActivityTicker } from "./components/ActivityTicker";
+import { ExplainerPanel } from "./components/ExplainerPanel";
 import { HouseholdBar } from "./components/HouseholdBar";
 import { MoneyFlow } from "./components/MoneyFlow";
+import { ProbeStrip } from "./components/ProbeStrip";
+import { Rail } from "./components/Rail";
 import { ScenarioLibrary } from "./components/ScenarioLibrary";
 import { StatusBanners } from "./components/StatusBanners";
 import { programLabel } from "./viz/palette";
@@ -118,12 +122,22 @@ export default function App() {
                   <MoneyFlow />
                 </div>
               </div>
+              <ExplainerPanel />
             </section>
 
             <section className="map-zone">
+              <div className="map-toolbar">
+                <Rail />
+                <ProbeStrip />
+              </div>
               <div className="stage">
                 <CanvasArea />
+                <ActivityTicker />
               </div>
+              <p className="provenance">
+                Computed with policyengine-us · Colorado rules · 2026 — model
+                estimates, not benefits advice
+              </p>
             </section>
 
             <ConnectorLayer container={mainRef} />

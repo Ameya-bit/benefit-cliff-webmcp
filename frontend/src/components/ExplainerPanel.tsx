@@ -1,19 +1,73 @@
 /**
- * The right panel: quiet, contextual explanation of whatever is selected —
- * a program stream (clicked in the money flow), the selected cliff, or the
- * live trace. Plain language, real links, and the human's probe verbs
- * attached to the object they act on. The full probe controls sit below
- * behind a disclosure for the power user.
+ * The reading modal: contextual explanation of whatever is selected — a
+ * program stream (clicked in the money flow), the selected cliff, or the
+ * live trace. It docks in the right half of the detail zone, in cliff-red,
+ * fed by its own beam from the selected cliff's spot on the map (the
+ * ConnectorLayer finds it by the `.explainer` class). Plain language, real
+ * links, and the probe verbs attached to the object they act on — ablate on
+ * the program, the policy dial on the binding rule.
  */
 
-import { useEffect, useRef } from "react";
-import { interpolate } from "../probes/analysis";
-import { runAblation, runMinimalFix, runTrace } from "../probes/runProbes";
+import { useEffect, useRef, useState } from "react";
+import { cliffRecovery, interpolate } from "../probes/analysis";
+import { runAblation, runEditPolicy, runMinimalFix, runTrace } from "../probes/runProbes";
 import { usePeiraStore } from "../state/store";
+import type { EditableParameter } from "../types";
+import { POLICY_DIALS } from "../probes/uiPresets";
 import { PROGRAM_INFO } from "../viz/programInfo";
 import { programColor, programLabel } from "../viz/palette";
 
 const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+
+/** Inline control for the whitelisted rule bound at the traced cliff. */
+function DialControl({ param }: { param: EditableParameter }) {
+  const isProbing = usePeiraStore((s) => s.isProbing);
+  const dial = POLICY_DIALS.find((d) => d.id === param.id);
+  const [value, setValue] = useState<number>(
+    typeof param.current_value === "boolean"
+      ? param.current_value
+        ? 1
+        : 0
+      : param.current_value,
+  );
+  if (!dial) return null;
+  const run = () => {
+    const v = dial.isBoolean ? value === 1 : value;
+    void runEditPolicy({ [dial.id]: v }, `${dial.label} → ${v}`, "human").catch(() => {});
+  };
+  return (
+    <div className="control-row">
+      {dial.isBoolean ? (
+        <label className="subsidy-row">
+          <input
+            type="checkbox"
+            checked={value === 1}
+            onChange={(e) => setValue(e.target.checked ? 1 : 0)}
+          />{" "}
+          on
+        </label>
+      ) : (
+        <input
+          type="number"
+          step={dial.step}
+          min={dial.min}
+          max={dial.max}
+          value={value}
+          aria-label="rule value"
+          onChange={(e) => setValue(Number(e.target.value) || dial.defaultValue)}
+        />
+      )}
+      <button
+        className="btn"
+        disabled={isProbing}
+        title="Rebuilds the rules (~5s) and re-runs the map"
+        onClick={run}
+      >
+        re-run under this rule
+      </button>
+    </div>
+  );
+}
 
 export function ExplainerPanel() {
   const sweep = usePeiraStore((s) => s.sweep);
@@ -48,28 +102,23 @@ export function ExplainerPanel() {
   }, [slug, selectedCliff]);
 
   if (!slug) {
+    // Nothing selected: a quiet hint in the open right half, not a modal.
     return (
-      <aside className="explainer">
-        <div>
-          <div className="eyebrow">Reading panel</div>
-          <h3>Nothing selected</h3>
-        </div>
+      <div className="explainer-empty">
         <p>
-          Click a money stream on the flow, or a <span className="cliff-hint">▼ cliff</span> on
-          the map, and it gets explained here in plain language — what the
-          program is, what it pays your family, and the exact rule behind it.
+          Click a money stream on the flow, or a{" "}
+          <span className="cliff-hint">▼ cliff</span> on the map, and it gets
+          explained here in plain language — what the program is, what it pays
+          your family, and the exact rule behind it.
         </p>
         {webmcpAvailable === false && (
           <p className="agent-hint">
-            No agent is attached. Open this page in ChatGPT’s browser to explore
-            by conversation — or drive every probe yourself with the toolbar on
-            the right.
+            No agent is attached. Open this page in ChatGPT’s browser to
+            explore by conversation — or explore by hand: scrub the map, click
+            cliffs, and use the what-if buttons.
           </p>
         )}
-        <p className="fine-print">
-          Model estimates from policyengine-us — not benefits advice.
-        </p>
-      </aside>
+      </div>
     );
   }
 
@@ -94,11 +143,29 @@ export function ExplainerPanel() {
       {selectedCliff && (
         <div className="cliff-block">
           <div className="eyebrow cliff-eyebrow">Selected cliff</div>
-          <p>
-            Crossing <b>{fmt(selectedCliff.from_x)}</b> drops what this family
-            keeps by <b className="neg">{fmt(Math.abs(selectedCliff.net_drop))}</b> — mostly{" "}
-            {programLabel(selectedCliff.dominant_program)}.
+          <p className="cliff-headline">
+            Crossing <b>{fmt(selectedCliff.from_x)}</b> costs this family{" "}
+            <b className="neg">{fmt(Math.abs(selectedCliff.net_drop))}</b>{" "}
+            <span className="serif-it">in one step</span>.
+            {(() => {
+              const recovery = sweep
+                ? cliffRecovery(sweep.x, sweep.net_income, selectedCliff)
+                : null;
+              return recovery ? <> Not fully recovered until {fmt(recovery)}.</> : null;
+            })()}
           </p>
+          <div className="delta-list">
+            {Object.entries(selectedCliff.program_deltas)
+              .filter(([, v]) => Math.abs(v) > 1)
+              .sort(([, a], [, b]) => a - b)
+              .map(([deltaSlug, v]) => (
+                <div key={deltaSlug} className="tt-row">
+                  <span className="swatch" style={{ background: programColor(deltaSlug) }} />
+                  {programLabel(deltaSlug)}{" "}
+                  <b className={v < 0 ? "neg" : "pos"}>{fmt(v)}</b>
+                </div>
+              ))}
+          </div>
           <div className="btn-row">
             <button
               className="btn"
@@ -119,6 +186,33 @@ export function ExplainerPanel() {
         </div>
       )}
 
+      {rule && (
+        <div className="rule-block" style={{ borderColor: color }}>
+          <div className="eyebrow" style={{ color }}>The rule that binds here</div>
+          <p>
+            {rule.rule}
+            {typeof rule.before === "number" && typeof rule.after === "number" && (
+              <>
+                {" "}
+                — <span className="tabular">{fmt(rule.before)} → {fmt(rule.after)}</span>
+              </>
+            )}
+          </p>
+          {rule.editable_parameter && (
+            <>
+              <p className="dial-note">
+                Policy dial: {rule.editable_parameter.label} — currently{" "}
+                {String(rule.editable_parameter.current_value)}. Test moving it:
+              </p>
+              <DialControl
+                key={rule.editable_parameter.id}
+                param={rule.editable_parameter}
+              />
+            </>
+          )}
+        </div>
+      )}
+
       <div>
         <div className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="swatch" style={{ background: color }} /> Program
@@ -133,28 +227,6 @@ export function ExplainerPanel() {
         <p>
           For your family right now: <b>{forYou > 1 ? `${fmt(forYou)}/yr` : "nothing at this income"}</b>.
         </p>
-      )}
-
-      {rule && (
-        <div className="rule-block" style={{ borderColor: color }}>
-          <div className="eyebrow" style={{ color }}>The rule that binds here</div>
-          <p>
-            {rule.rule}
-            {typeof rule.before === "number" && typeof rule.after === "number" && (
-              <>
-                {" "}
-                — <span className="tabular">{fmt(rule.before)} → {fmt(rule.after)}</span>
-              </>
-            )}
-          </p>
-          {rule.editable_parameter && (
-            <p className="dial-note">
-              Policy dial: <code>{rule.editable_parameter.id}</code> ={" "}
-              {String(rule.editable_parameter.current_value)} — the agent (or you,
-              below) can test moving it.
-            </p>
-          )}
-        </div>
       )}
 
       {info && (
@@ -181,9 +253,8 @@ export function ExplainerPanel() {
 
       {webmcpAvailable === false && (
         <p className="agent-hint">
-          No agent is attached. Open this page in ChatGPT’s browser to explore by
-          conversation — or drive every probe yourself with the toolbar on the
-          right.
+          No agent is attached. Open this page in ChatGPT’s browser to explore
+          by conversation — everything here works by hand too.
         </p>
       )}
 

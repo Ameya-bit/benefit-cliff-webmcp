@@ -186,25 +186,78 @@ header {
 
 .map-zone {
   min-height: 0;
+  position: relative;
   padding-top: 6px;
 }
 
-.rail {
-  border-right: 1px solid var(--border);
-  padding: 12px 14px 8px 0;
-  overflow-y: auto;
-  max-height: 46vh;
+.map-toolbar {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 9px;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 2px 0 4px;
 }
-.rail-empty {
-  margin: 0;
-  font-size: 12px;
+
+.probe-strip {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.strip-label { font-size: 12.5px; color: var(--ink-muted); margin-right: 2px; }
+.strip-divider { width: 1px; height: 16px; background: var(--border-2); margin: 0 4px; }
+
+.ticker {
+  position: absolute;
+  bottom: 78px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+  box-shadow: 0 4px 14px rgba(23, 23, 23, 0.07);
+  animation: ticker-in 350ms ease;
+  pointer-events: none;
+  max-width: 46%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ticker-who { font-weight: 600; }
+.ticker-who.agent { color: var(--agent); }
+.ticker-who.human { color: var(--human); }
+@keyframes ticker-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker { animation: none; }
+}
+
+.provenance {
+  margin: 2px 0 0;
+  font-size: 11px;
   color: var(--ink-muted);
-  line-height: 1.5;
+  text-align: right;
 }
+
+/* Horizontal snapshots tray above the map. */
+.rail {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  padding: 2px 0;
+}
+.rail .eyebrow { flex: none; padding-bottom: 8px; }
 
 .thumb {
   font: inherit;
@@ -214,10 +267,18 @@ header {
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   border-radius: 6px;
-  padding: 4px;
-  margin-left: -4px;
+  padding: 3px;
+  width: 110px;
+  flex: none;
+}
+.thumb .t-title {
+  display: block;
+  max-width: 104px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .thumb:hover { background: var(--surface-2); }
 .thumb:disabled { cursor: wait; opacity: 0.6; }
@@ -242,6 +303,7 @@ header {
 .voice.human { color: var(--human); }
 
 .stage {
+  position: relative;
   padding: 4px 0;
   display: flex;
   flex-direction: column;
@@ -358,15 +420,16 @@ header {
 
 .annotation path { cursor: help; }
 
-/* ── Explainer: the reading card in the detail zone ─────────────────── */
+/* ── Explainer: the reading modal in the right half ─────────────────── */
 
+/* Cliff-red, like the beam that feeds it from the selected cliff. */
 .explainer {
-  flex: 1;
-  min-width: 270px;
-  max-width: 420px;
-  border: 1px solid var(--border);
+  flex: 1 1 auto;
+  min-width: 300px;
+  max-width: 46%;
+  border: 1px solid rgba(204, 59, 59, 0.28);
   border-radius: 12px;
-  background: var(--surface);
+  background: rgba(204, 59, 59, 0.06);
   padding: 14px 18px 12px;
   overflow-y: auto;
   max-height: 44vh;
@@ -374,6 +437,25 @@ header {
   flex-direction: column;
   gap: 12px;
 }
+
+/* Nothing selected: a quiet hint, not a modal. */
+.explainer-empty {
+  flex: 1 1 auto;
+  max-width: 400px;
+  padding: 18px 4px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.explainer-empty p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.cliff-headline { font-size: 15px !important; }
+.delta-list { display: flex; flex-direction: column; gap: 2px; }
 
 .explainer h3 { margin: 4px 0 0; font-size: 16px; font-weight: 600; }
 .explainer .official-name { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
@@ -715,6 +797,9 @@ header {
 
 @media (max-width: 1000px) {
   .detail-zone { flex-direction: column; }
+  .explainer { max-width: none; max-height: none; }
+  .explainer-empty { max-width: none; padding: 0 4px; }
+  .map-toolbar { flex-wrap: wrap; }
   .connector-layer { display: none; }
   .disclaimer { display: none; }
   .money-flow { max-height: none; }

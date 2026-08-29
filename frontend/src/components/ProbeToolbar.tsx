@@ -16,55 +16,9 @@ import {
   runSweep2D,
 } from "../probes/runProbes";
 import { usePeiraStore } from "../state/store";
-import type { Household } from "../types";
+import { DIFF_PRESETS, POLICY_DIALS } from "../probes/uiPresets";
 import { programLabel } from "../viz/palette";
 import { PROGRAM_SLUGS } from "../webmcp/tools";
-
-interface PolicyDial {
-  id: string;
-  label: string;
-  isBoolean: boolean;
-  defaultValue: number;
-  min: number;
-  max: number;
-  step: number;
-}
-
-/** Mirrors the edit_policy whitelist (tools.ts / backend app/policy.py). */
-const POLICY_DIALS: PolicyDial[] = [
-  { id: "ccap_exit_smi_rate", label: "Childcare exit limit (× state median)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
-  { id: "ccap_entry_smi_rate", label: "Childcare entry limit (× state median)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
-  { id: "snap_gross_income_limit", label: "Food-aid gross limit (× poverty line)", isBoolean: false, defaultValue: 1.3, min: 1, max: 3, step: 0.1 },
-  { id: "ctc_fully_refundable", label: "Child tax credit fully refundable", isBoolean: true, defaultValue: 0, min: 0, max: 1, step: 1 },
-];
-
-interface DiffPreset {
-  label: string;
-  isAvailable: (h: Household) => boolean;
-  variant: (h: Household) => Partial<Household>;
-}
-
-const DIFF_PRESETS: DiffPreset[] = [
-  {
-    label: "+ partner",
-    isAvailable: (h) => h.adults.length < 2,
-    variant: (h) => ({
-      adults: [...h.adults, { age: 30, employment_income: 0, weekly_work_hours: 40 }],
-    }),
-  },
-  {
-    label: "kids 3yrs older",
-    isAvailable: (h) => h.children.length > 0,
-    variant: (h) => ({
-      children: h.children.map((c) => ({ ...c, age: Math.min(c.age + 3, 17) })),
-    }),
-  },
-  {
-    label: "off childcare assistance",
-    isAvailable: (h) => h.receiving_childcare_subsidy,
-    variant: () => ({ receiving_childcare_subsidy: false }),
-  },
-];
 
 type Verb = "sweep" | "compare" | "ablate" | "dial" | "map2d" | "pin";
 
