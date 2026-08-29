@@ -49,6 +49,9 @@ interface PeiraState {
   annotations: Annotation[];
   probeLog: ProbeLogEntry[];
   isProbing: boolean;
+  /** Narration for slow probes (reform rebuilds, the minimal-fix search) —
+   * the ProbeProgress pill shows it with an elapsed counter. */
+  probingLabel: string | null;
   /** Last failed probe's message, shown on the bench until dismissed or a
    * new probe starts. Agent and human failures both surface here. */
   probeError: string | null;
@@ -73,7 +76,7 @@ interface PeiraState {
   selectCliff: (cliff: Cliff | null, source: "agent" | "human") => void;
   setTrace: (trace: TraceResult | null) => void;
   addAnnotation: (annotation: Omit<Annotation, "id">) => void;
-  setProbing: (isProbing: boolean) => void;
+  setProbing: (isProbing: boolean, label?: string | null) => void;
   setProbeError: (probeError: string | null) => void;
   setWebmcpAvailable: (webmcpAvailable: boolean) => void;
   logProbe: (entry: Omit<ProbeLogEntry, "id" | "timestamp">) => void;
@@ -116,6 +119,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   annotations: [],
   probeLog: [],
   isProbing: false,
+  probingLabel: null,
   probeError: null,
   webmcpAvailable: null,
   setHousehold: (household) => set({ household }),
@@ -177,7 +181,8 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
           ]
         : state.probeLog,
     })),
-  setProbing: (isProbing) => set({ isProbing }),
+  setProbing: (isProbing, label) =>
+    set({ isProbing, probingLabel: isProbing ? (label ?? null) : null }),
   setProbeError: (probeError) => set({ probeError }),
   setWebmcpAvailable: (webmcpAvailable) => set({ webmcpAvailable }),
   logProbe: (entry) =>

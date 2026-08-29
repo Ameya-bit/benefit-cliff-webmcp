@@ -252,6 +252,36 @@ header {
   .ticker { animation: none; }
 }
 
+.probe-progress {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 72%;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  box-shadow: 0 6px 20px rgba(23, 23, 23, 0.09);
+  animation: ticker-in 300ms ease;
+}
+.pulse.working { background: var(--accent); }
+.progress-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elapsed {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  flex: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .probe-progress { animation: none; }
+}
+
 .provenance {
   margin: 2px 0 0;
   font-size: 11px;

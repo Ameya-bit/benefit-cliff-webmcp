@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const DURATION_MS = 450;
+const DURATION_MS = 650;
 
 const easeCubicInOut = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -23,7 +23,8 @@ export function useAnimatedMatrix(target: number[][]): number[][] {
     const sameShape =
       from.length === target.length &&
       from.every((row, i) => row.length === target[i].length);
-    if (!sameShape) {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!sameShape || reduceMotion) {
       setCurrent(target);
       return;
     }

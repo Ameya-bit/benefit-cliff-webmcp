@@ -8,6 +8,7 @@ import { ActivityTicker } from "./components/ActivityTicker";
 import { ExplainerPanel } from "./components/ExplainerPanel";
 import { HouseholdBar } from "./components/HouseholdBar";
 import { MoneyFlow } from "./components/MoneyFlow";
+import { ProbeProgress } from "./components/ProbeProgress";
 import { ProbeStrip } from "./components/ProbeStrip";
 import { Rail } from "./components/Rail";
 import { ScenarioLibrary } from "./components/ScenarioLibrary";
@@ -133,6 +134,7 @@ export default function App() {
               <div className="stage">
                 <CanvasArea />
                 <ActivityTicker />
+                <ProbeProgress />
               </div>
               <p className="provenance">
                 Computed with policyengine-us · Colorado rules · 2026 — model

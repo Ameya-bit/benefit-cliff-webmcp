@@ -22,9 +22,9 @@ import type {
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
 
-async function probing<T>(work: () => Promise<T>): Promise<T> {
+async function probing<T>(work: () => Promise<T>, label?: string): Promise<T> {
   const store = usePeiraStore.getState();
-  store.setProbing(true);
+  store.setProbing(true, label);
   store.setProbeError(null);
   try {
     return await work();
@@ -163,7 +163,7 @@ export async function runSweep2D(
     });
     store.pushGalleryFromCurrent("heatmap", "Earnings × childcare map", source);
     return heatmap;
-  });
+  }, `Mapping earnings × childcare — ${axisX.count * axisY.count} household simulations…`);
 }
 
 export async function runEditPolicy(
@@ -190,7 +190,7 @@ export async function runEditPolicy(
     usePeiraStore.getState().logProbe({ source, tool: "edit_policy", summary: label });
     usePeiraStore.getState().pushGalleryFromCurrent("reform", `Rule change: ${label}`, source);
     return result;
-  });
+  }, `Rebuilding Colorado's rules under "${label}" and re-running the map (~6 s)…`);
 }
 
 export async function runMinimalFix(
@@ -228,7 +228,7 @@ export async function runMinimalFix(
         : `no whitelisted fix for ${result.program}`,
     });
     return result;
-  });
+  }, "Searching for the smallest rule change that removes this cliff — each candidate rebuilds the full Colorado rules (~6 s per try, up to a minute)…");
 }
 
 export function annotate(

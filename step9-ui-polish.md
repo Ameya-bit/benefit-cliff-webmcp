@@ -196,20 +196,19 @@ the a11y tree — add roles/keyboard access in the 9.6 pass.
 
 A viewer watching the demo must be able to say who did what without being told.
 
-- [ ] **Action ticker**: when a probe lands, show a transient but readable line near the
-      stage — "Agent mapped your income $0–$100k → found 7 cliffs" / "You removed
-      Cash aid (TANF)". Source it from the existing `probeLog` (store.ts); the footer
-      `ActivityLine` can stay as the persistent version, but the ticker must be seen
-      without looking at the footer. Color-code by `--agent` / `--human`.
-- [ ] **Annotation pins**: confirm `AnnotationPins.tsx` renders `annotate` results on the
-      chart in the agent's visual identity; if it's wired but invisible, style it up
-      (pin + short label). This is the lab-notebook-on-canvas moment.
-- [ ] **Rail → readable cards** (`Rail.tsx`): keep the thumbnails but add a legible line
-      per entry: who + verb + headline number ("Agent · without TANF · SNAP −$5,139").
-      Bump the "· agent / · you" tag from 9px decoration to a real colored badge.
+- [x] **Action ticker** (done in 9.1e): latest probe floats in the map's quiet
+      lower-right, actor-colored pulse + name, re-animates per entry.
+- [x] **Annotation pins** (commit d5ed745): notes render as visible haloed labels
+      in identity colors (--agent purple / --human green — no longer a blue that
+      collided with the cursor line), hanging below the curve into the stack so
+      they never fight the cliff badges; adjacent pins stagger; full note on
+      hover. Verified with one agent + one human pin via the dev `window.peira`
+      handle; pins persist across view switches.
+- [x] **Tray cards** (commit d5ed745): title + AGENT/YOU badge pill + one-line
+      gist ("7 cliffs" / "vs today" / "safety grid").
 
-**Gate:** screen-record one agent probe + one human probe; a naive viewer can narrate
-who did what from the recording alone.
+**Gate:** manual pass done (pins + tray + ticker all attribute correctly). Live
+agent rehearsal in ChatGPT still pending — fold into the 9.7 demo rehearsal.
 
 ---
 
