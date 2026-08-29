@@ -158,12 +158,21 @@ const RAW_TOOLS: PeiraTool[] = [
       const active = Object.entries(point.programs)
         .filter(([, v]) => v > 0)
         .map(([slug, v]) => `${slug}: ${money(v)}/yr`);
+      const paysChildcare = household.children.some(
+        (child) => child.yearly_childcare_expenses > 0,
+      );
       return {
         household,
         at_current_income: {
           net_income: money(point.net_income),
           active_programs: active,
         },
+        ...(paysChildcare && !household.receiving_childcare_subsidy
+          ? {
+              check_with_the_human:
+                "Modeled as a NEW childcare-assistance applicant (entry rules apply). If this family already receives the subsidy, ask and re-run with receiving_childcare_subsidy=true — enrollment moves the cliffs substantially.",
+            }
+          : {}),
         note: "Household card updated on the shared canvas. Run sweep to map the mechanism around this family.",
       };
     },
