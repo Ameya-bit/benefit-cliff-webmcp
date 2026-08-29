@@ -1,7 +1,7 @@
 /* ── App frame ──────────────────────────────────────────────────────── */
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   padding: 14px 22px 10px;
@@ -112,25 +112,31 @@ header {
 
 .empty-center {
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
+/* Top half: the two modals stretch to fill it. */
 .detail-zone {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   justify-content: flex-start;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 20px;
   padding: 14px 0 0;
 }
 
 /* The money-flow modal: blue like the line and the beam that feeds it —
    line, beam, and card read as one object. Lives in the left half; the
-   right half is open (reading panel returns there later). */
+   reading modal takes the right. */
 .flow-card {
   flex: 0 1 auto;
   width: 48%;
   min-width: 340px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid rgba(37, 99, 235, 0.28);
   border-radius: 12px;
   background: rgba(37, 99, 235, 0.06);
@@ -170,25 +176,31 @@ header {
 .sec-head .at .cursor-inc { color: var(--accent); }
 .flow-hint { font-size: 12px; color: var(--ink-muted); }
 
-.flow-card .svg-wrap { min-height: 0; }
+.flow-card .svg-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
 .money-flow {
   display: block;
   width: 100%;
-  max-width: 820px;
-  height: auto;
-  max-height: 34vh;
-  margin: 0 auto;
+  height: 100%;
 }
 .money-flow text { font-family: inherit; }
 .flow-inactive:hover text { fill: var(--ink-primary); }
 
-/* ── Map zone: the full-width benefits map, grounded at the bottom ──── */
+/* ── Map zone: the bottom half, map pinned to the ground ────────────── */
 
 .map-zone {
+  flex: 1 1 0;
   min-height: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
   padding-top: 6px;
 }
+.map-toolbar { flex: none; }
+.map-zone .provenance { flex: none; }
 
 .map-toolbar {
   display: flex;
@@ -308,11 +320,15 @@ header {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1 1 0;
+  min-height: 0;
 }
-/* Keep stage graphs short: cap their width so wide monitors don't blow the
-   aspect-ratio-driven height up. */
 .stage .chart-wrap {
   width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .headline {
@@ -345,7 +361,8 @@ header {
 
 .stacked-chart {
   width: 100%;
-  height: auto;
+  flex: 1 1 0;
+  min-height: 0;
   display: block;
   touch-action: none;
 }
@@ -427,12 +444,12 @@ header {
   flex: 1 1 auto;
   min-width: 300px;
   max-width: 46%;
+  min-height: 0;
   border: 1px solid rgba(204, 59, 59, 0.28);
   border-radius: 12px;
   background: rgba(204, 59, 59, 0.06);
   padding: 14px 18px 12px;
   overflow-y: auto;
-  max-height: 44vh;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -796,13 +813,21 @@ header {
 /* ── Narrow screens ─────────────────────────────────────────────────── */
 
 @media (max-width: 1000px) {
-  .detail-zone { flex-direction: column; }
-  .explainer { max-width: none; max-height: none; }
+  /* Stacked layout: natural heights + page scroll, no 50/50 split. */
+  .app { height: auto; min-height: 100vh; }
+  .detail-zone { flex: none; flex-direction: column; }
+  .flow-card { width: auto; min-width: 0; }
+  .flow-card .svg-wrap { flex: none; display: block; }
+  .money-flow { height: auto; }
+  .explainer { max-width: none; }
   .explainer-empty { max-width: none; padding: 0 4px; }
+  .map-zone { flex: none; display: block; }
+  .stage { flex: none; display: block; }
+  .stage .chart-wrap { display: block; }
+  .stacked-chart { flex: none; height: auto; }
   .map-toolbar { flex-wrap: wrap; }
   .connector-layer { display: none; }
   .disclaimer { display: none; }
-  .money-flow { max-height: none; }
 }
 
 /* Phone: the household sentence condenses into a person-icon chip that opens

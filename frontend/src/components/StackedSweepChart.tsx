@@ -84,21 +84,31 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
     return `M${fwd} L${back} Z`;
   };
 
-  const indexAtPointer = (e: React.PointerEvent | React.MouseEvent): number | null => {
+  // The svg can be letterboxed inside its flexed box (preserveAspectRatio
+  // xMidYMax) — map pointer positions against the drawn content, not the box.
+  const contentBox = () => {
     const rect = svgRef.current!.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * W;
-    const frac = (px - M.left) / PLOT_W;
+    const scale = Math.min(rect.width / W, rect.height / H);
+    const width = W * scale;
+    return { left: rect.left + (rect.width - width) / 2, width };
+  };
+
+  const pxAtPointer = (e: React.PointerEvent | React.MouseEvent): number => {
+    const { left, width } = contentBox();
+    return ((e.clientX - left) / width) * W;
+  };
+
+  const indexAtPointer = (e: React.PointerEvent | React.MouseEvent): number | null => {
+    const frac = (pxAtPointer(e) - M.left) / PLOT_W;
     const index = Math.round(frac * (sweep.x.length - 1));
     return index >= 0 && index < sweep.x.length ? index : null;
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    const rect = svgRef.current!.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * W;
     const index = indexAtPointer(e);
     if (index !== null) {
       setCurrentIndex(index);
-      setHoverPx(px);
+      setHoverPx(pxAtPointer(e));
     }
   };
   const onPointerLeave = () => {
@@ -140,7 +150,8 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="stacked-chart"
+        preserveAspectRatio="xMidYMax meet"
+        className="stacked-chart sweep-map"
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onClick={onPlotClick}

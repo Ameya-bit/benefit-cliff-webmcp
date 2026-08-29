@@ -155,6 +155,35 @@ Next when re-adding panels: reading panel returns as a second anchored modal
 
 ---
 
+## 9.1e Everything re-homed on the beam canvas (DONE Aug 29, commit f26ef1e)
+
+- [x] **Reading modal** (right half, cliff-red + red beam): headline sentence
+      with recovery, per-program deltas, rule-that-binds block FIRST (was below
+      the modal's internal fold), **policy dial inline** on the binding rule —
+      the healing finale verified by hand (0.85 → 1.08 heals the CCAP cliffs,
+      mode banner + back-to-current-law work). Quiet borderless hint when
+      nothing is selected. Bugfix: selecting a different cliff clears a stale
+      trace (old rule/dimming used to bleed in).
+- [x] **Snapshots tray**: horizontal thumb tray above the map (appears at 2+
+      entries), one-line truncated titles; restore verified.
+- [x] **Probe strip** above the map, right side: what-if chips + safety grid.
+      Ablate ("what if it were gone?") + dial live in the reading modal.
+      POLICY_DIALS/DIFF_PRESETS shared in probes/uiPresets.ts.
+- [x] **Activity ticker** (9.2 partial): latest probe floats in the map's
+      quiet lower-right, actor-colored, animates per entry.
+- [x] **Provenance line** (9.6 partial) under the legend; no-agent hint copy
+      updated in ScenarioLibrary + ExplainerPanel.
+- [x] Verified: tsc, vite build (101 kB gz), probe-e2e green (all tools +
+      6 presets), manual arc select→trace→dial-heal→restore→what-if→tray.
+
+Still open from the master list: diff/heatmap visual pass on this canvas,
+annotation-pin styling + snapshot who-tags polish (rest of 9.2), chart aria +
+contrast audit (9.6), cold-open ghost household (9.6), ChatGPT-desktop
+re-verify of the new layout, demo rehearsal (9.7). SVG cliff pills are not in
+the a11y tree — add roles/keyboard access in the 9.6 pass.
+
+---
+
 ## 9.2 Make the collaboration visible (scored criterion)
 
 A viewer watching the demo must be able to say who did what without being told.

@@ -44,7 +44,9 @@ export function ConnectorLayer({
 
   const measure = useCallback(() => {
     const root = container.current;
-    const chart = root?.querySelector<SVGSVGElement>("svg.stacked-chart");
+    // Only the sweep map anchors beams — diff/heatmap views share the chart
+    // styling class but not this one.
+    const chart = root?.querySelector<SVGSVGElement>("svg.sweep-map");
     if (!root || !sweep || sweep.x.length < 2 || !chart) {
       setBeams([]);
       return;
@@ -54,14 +56,20 @@ export function ConnectorLayer({
     setSize({ w: root.clientWidth, h: root.clientHeight });
 
     const { W, H, M } = CHART_GEOM;
+    // The svg letterboxes inside its flexed box (preserveAspectRatio
+    // xMidYMax): content is centered horizontally, pinned to the bottom.
+    const scale = Math.min(chartRect.width / W, chartRect.height / H);
+    const contentW = W * scale;
+    const contentH = H * scale;
+    const contentLeft = chartRect.left - rootRect.left + (chartRect.width - contentW) / 2;
+    const contentTop = chartRect.bottom - rootRect.top - contentH;
+
     const xMin = sweep.x[0];
     const xMax = sweep.x[sweep.x.length - 1];
     const plotW = W - M.left - M.right;
     const xToPx = (v: number) =>
-      chartRect.left -
-      rootRect.left +
-      ((M.left + ((v - xMin) / (xMax - xMin)) * plotW) / W) * chartRect.width;
-    const rootY = chartRect.top - rootRect.top + (M.top / H) * chartRect.height;
+      contentLeft + ((M.left + ((v - xMin) / (xMax - xMin)) * plotW) / W) * contentW;
+    const rootY = contentTop + (M.top / H) * contentH;
 
     const attach = (sel: string) => {
       const el = root.querySelector<HTMLElement>(sel);
