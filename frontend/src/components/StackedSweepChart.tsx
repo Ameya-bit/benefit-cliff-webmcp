@@ -152,6 +152,11 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMax meet"
         className="stacked-chart sweep-map"
+        aria-label={`Benefits map: earnings ${fmtK(xMin)} to ${fmtK(xMax)}, ${sweep.cliffs.length} cliff${sweep.cliffs.length === 1 ? "" : "s"}${
+          worstDrop < 0
+            ? `, worst costs ${fmt(Math.abs(worstDrop))} in one step`
+            : ""
+        }`}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onClick={onPlotClick}
@@ -263,9 +268,20 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
             <g
               key={cliff.from_x}
               className={`cliff-badge${isSelected ? " selected" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              aria-label={`Cliff at ${fmt(cliff.from_x)}: crossing it costs ${fmt(Math.abs(cliff.net_drop))}`}
               onClick={(e) => {
                 e.stopPropagation();
                 selectCliff(isSelected ? null : cliff, "human");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  selectCliff(isSelected ? null : cliff, "human");
+                }
               }}
             >
               {/* generous invisible hit area — the badge is a control */}

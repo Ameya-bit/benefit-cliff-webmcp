@@ -8,7 +8,7 @@
   --border-2: #dddddd;
   --ink-primary: #171717;
   --ink-secondary: #666666;
-  --ink-muted: #999999;
+  --ink-muted: #767676; /* AA on white at small sizes */
   --accent: #2563eb;
   --agent: #6d5bd0;
   --human: #047857;

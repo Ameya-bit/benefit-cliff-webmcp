@@ -65,7 +65,12 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
 
   return (
     <div className="chart-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} className="stacked-chart" onPointerLeave={() => setHover(null)}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="stacked-chart"
+        aria-label={`Safety map: earnings ${fmtK(heatmap.axis_x.min)} to ${fmtK(heatmap.axis_x.max)} by childcare cost ${fmtK(heatmap.axis_y.min)} to ${fmtK(heatmap.axis_y.max)}; net resources ${fmt(vMin)} to ${fmt(vMax)}; red edges mark benefit cliffs`}
+        onPointerLeave={() => setHover(null)}
+      >
         {rows.map((row, i) =>
           row.map((v, j) => (
             <rect

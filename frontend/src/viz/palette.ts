@@ -45,5 +45,5 @@ export const CHART_CHROME = {
   axis: "#dddddd",
   inkPrimary: "#171717",
   inkSecondary: "#666666",
-  inkMuted: "#999999",
+  inkMuted: "#767676",
 };

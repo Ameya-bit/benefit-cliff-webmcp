@@ -408,6 +408,7 @@ header {
 
 .cliff-badge { cursor: pointer; }
 .cliff-badge:hover .badge-pill { fill: rgba(204, 59, 59, 0.18); }
+.cliff-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .chart-tooltip {
   position: absolute;
