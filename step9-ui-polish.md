@@ -287,9 +287,9 @@ The 41×21 blue field currently shows no ridges, no "you", jargon caption.
 
 ## 9.7 Freeze, rehearse, ship prep
 
-- [ ] Re-run existing checks: `cd backend && uv run pytest tests/` and
-      `cd frontend && npx tsx scripts/probe-e2e.ts` (UI changes must not break tool paths).
-- [ ] Update plan.md PROGRESS (mark Step 9, link this file).
+- [x] Re-run existing checks (Aug 29): backend pytest 17 passed; probe-e2e all
+      9 tools + 6 presets green. vite build 101 kB gz.
+- [x] plan.md PROGRESS updated (step 9 code-done, links this file).
 - [ ] Demo-arc rehearsal ×2 in ChatGPT desktop (carry-over from Step 8). Remember the
       script rules: opening line says **"we're already on childcare assistance (CCAP)"**
       (or start from the "Weighing a raise" preset), and script the ~2 sensitive-data
