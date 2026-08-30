@@ -18,7 +18,7 @@ This is a **step-by-step build plan**, not a schedule. Each step has a verificat
 | 7. edit_policy + find_minimal_fix finale | ✅ | ad1cc68, 21d74be |
 | 7.5 Toolset finalization (reply enrichment + workbench read) | ✅ live gate PASSED (all 3 questions + bidirectional check) | 7d39162 |
 | 8. Scenario library + demo hardening | 🔶 code done + e2e green; demo-arc rehearsal (×2 in ChatGPT) pending | c030614 |
-| 9. Dedicated UI polish (feature freeze first) | 🔶 code done Aug 29 (full log: `step9-ui-polish.md`) — beam-canvas rebuild (map = ground, blue money-flow modal + red reading modal fed by beams), 50/50 responsive split, agent-visibility (pins/tray/ticker), minimal-fix progress narration, heatmap ridges+you-dot, contrast/aria pass; pytest 17✅ + probe-e2e ✅; **ChatGPT-desktop re-verify + demo rehearsal pending** | c27cbb2 |
+| 9. Dedicated UI polish (feature freeze first) | 🔶 REOPENED Aug 29 as **v2 rebuild plan** (`step9-ui-polish.md`) after full UX audit — root cause found: fixed-viewBox letterboxing (blank margins + 5–9px effective SVG text), no type hierarchy, v1's 9.3 human verbs unfinished (pin + sweep-zoom agent-only, ProbeToolbar orphaned), empty cold open. Phases: 9A scale system → 9B hierarchy/hero number → 9C human parity → 9D cold open → 9E ChatGPT re-verify + rehearsal. v1 work through c27cbb2 (beam canvas, 50/50 split, pins/tray/ticker, heatmap ridges) stands. | c27cbb2 |
 | 10. Ship (deploy Render+Netlify, README, video, Devpost) | pending | |
 
 ### Session handoff notes
