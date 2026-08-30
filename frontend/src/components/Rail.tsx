@@ -48,21 +48,27 @@ function Thumb({ entry }: { entry: GalleryEntry }) {
 
   return (
     <svg viewBox={`0 0 ${TW} ${TH}`} aria-hidden="true">
-      {entry.kind === "heatmap" &&
-        [0, 1, 2, 3, 4, 5].map((i) =>
-          [0, 1, 2].map((j) => (
-            <rect
-              key={`${i}${j}`}
-              x={4 + i * 19}
-              y={3 + j * 8.5}
-              width={17}
-              height={7}
-              rx={2}
-              fill="#2a78d6"
-              opacity={0.15 + ((i + j) % 4) * 0.18}
+      {entry.kind === "heatmap" && (
+        <g>
+          {/* the income profile at three daycare costs, cliffs in red */}
+          {[7, 15, 23].map((y, k) => (
+            <path
+              key={y}
+              d={`M4 ${y + 2} L38 ${y - 1} L44 ${y + 2.5} L84 ${y}${k < 2 ? ` L89 ${y + 3} L114 ${y + 1}` : ` L114 ${y - 1}`}`}
+              fill="none"
+              stroke={C.inkPrimary}
+              strokeWidth={1.2}
+              opacity={0.75}
             />
-          )),
-        )}
+          ))}
+          {[7, 15].map((y) => (
+            <g key={`r${y}`} stroke="#cc3b3b" strokeWidth={1.8}>
+              <line x1={38} y1={y - 1} x2={44} y2={y + 2.5} />
+              <line x1={84} y1={y} x2={89} y2={y + 3} />
+            </g>
+          ))}
+        </g>
+      )}
       {entry.view.mode === "diff" ? (
         <>
           {diffA && <path d={diffA} fill="none" stroke={C.inkPrimary} strokeWidth={1.3} />}
