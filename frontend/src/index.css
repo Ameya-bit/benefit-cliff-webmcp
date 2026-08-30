@@ -1,18 +1,29 @@
 :root {
   color-scheme: light;
-  /* Light-committed. Quiet editorial chrome: hairlines over boxes. */
-  --page: #ffffff;
+  /* Light-committed. Wallet grammar: soft grey ground, white cards, one
+     radius, one shadow. */
+  --page: #f4f5f7;
   --surface: #ffffff;
   --surface-2: #fafafa;
   --border: #ececec;
   --border-2: #dddddd;
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgba(23, 23, 23, 0.05);
   --ink-primary: #171717;
   --ink-secondary: #666666;
-  --ink-muted: #767676; /* AA on white at small sizes */
+  --ink-muted: #707070; /* AA on the --page grey, not just on white */
   --accent: #2563eb;
   --agent: #6d5bd0;
   --human: #047857;
   --cliff: #cc3b3b;
+  /* Type scale (9B): floor at 12px for anything informational; one hero
+     size so a single number can own the screen. */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-lg: 16px;
+  --fs-xl: 19px;
+  --fs-hero: 42px;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 

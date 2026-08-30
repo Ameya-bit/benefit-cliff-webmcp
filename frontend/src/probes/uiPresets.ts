@@ -26,27 +26,48 @@ export const POLICY_DIALS: PolicyDial[] = [
 export interface DiffPreset {
   label: string;
   isAvailable: (h: Household) => boolean;
-  variant: (h: Household) => Partial<Household>;
+  /** Optional knob the human can turn before running (the agent already
+   * builds arbitrary households; this keeps the humans on equal footing). */
+  param?: {
+    label: string;
+    defaultValue: number;
+    min: number;
+    max: number;
+    step: number;
+  };
+  /** value is the param (or its default when the preset has none). */
+  variant: (h: Household, value: number) => Partial<Household>;
+  /** Label for the run, with the chosen value spelled out. */
+  runLabel: (value: number) => string;
 }
+
+const fmtK = (v: number) =>
+  Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
 
 export const DIFF_PRESETS: DiffPreset[] = [
   {
     label: "+ partner",
     isAvailable: (h) => h.adults.length < 2,
-    variant: (h) => ({
-      adults: [...h.adults, { age: 30, employment_income: 0, weekly_work_hours: 40 }],
+    param: { label: "partner earns $/yr", defaultValue: 0, min: 0, max: 200_000, step: 1000 },
+    variant: (h, value) => ({
+      adults: [...h.adults, { age: 30, employment_income: value, weekly_work_hours: 40 }],
     }),
+    runLabel: (value) =>
+      value > 0 ? `+ partner earning ${fmtK(value)}` : "+ partner (no income)",
   },
   {
-    label: "kids 3yrs older",
+    label: "kids older",
     isAvailable: (h) => h.children.length > 0,
-    variant: (h) => ({
-      children: h.children.map((c) => ({ ...c, age: Math.min(c.age + 3, 17) })),
+    param: { label: "years older", defaultValue: 3, min: 1, max: 10, step: 1 },
+    variant: (h, value) => ({
+      children: h.children.map((c) => ({ ...c, age: Math.min(c.age + value, 17) })),
     }),
+    runLabel: (value) => `kids ${value}yr${value === 1 ? "" : "s"} older`,
   },
   {
     label: "off childcare assistance",
     isAvailable: (h) => h.receiving_childcare_subsidy,
     variant: () => ({ receiving_childcare_subsidy: false }),
+    runLabel: () => "off childcare assistance",
   },
 ];

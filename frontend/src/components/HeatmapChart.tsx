@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
 import type { HeatmapResult } from "../types";
 import { CHART_CHROME as C, CLIFF_COLOR } from "../viz/palette";
+import { useFittedHeight } from "../viz/useFittedBox";
 
 const W = 1240;
-const H = 330;
+const FALLBACK_H = 330;
 const M = { top: 30, right: 14, bottom: 36, left: 56 };
 
 /** A step down this big (along rising earnings) is drawn as a cliff edge. */
 const RIDGE_DROP = -1500;
 
 const fmtK = (v: number) => `$${Math.round(v / 1000)}k`;
-const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+const fmt = (v: number) =>
+  `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`;
 
 /** Sequential single-hue ramp (blue), dark -> light with magnitude. */
 function rampColor(t: number): string {
@@ -25,6 +27,8 @@ function rampColor(t: number): string {
  * earnings are drawn as red edges, and the household sits on the map as a
  * "you" dot — the safe (bright, unbroken) regions read at a glance. */
 export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const H = useFittedHeight(svgRef, W, FALLBACK_H, 220, 560);
   const [hover, setHover] = useState<{ i: number; j: number } | null>(null);
   const household = usePeiraStore((s) => s.household);
   const rows = heatmap.net_income;
@@ -66,6 +70,7 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
   return (
     <div className="chart-wrap">
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         className="stacked-chart"
         aria-label={`Safety map: earnings ${fmtK(heatmap.axis_x.min)} to ${fmtK(heatmap.axis_x.max)} by childcare cost ${fmtK(heatmap.axis_y.min)} to ${fmtK(heatmap.axis_y.max)}; net resources ${fmt(vMin)} to ${fmt(vMax)}; red edges mark benefit cliffs`}

@@ -1,10 +1,10 @@
 /**
- * Beams that root the detail cards to the incomes they describe. The map is
- * the ground of the page; the money-flow card grows out of the blue cursor
- * line, and the explanation card grows out of the selected cliff, each as a
- * soft beam that widens as it rises. Cards stay put; only the roots move.
- * Pure overlay — measured from the DOM, pointer-events: none, hidden on
- * stacked (narrow) layouts by CSS.
+ * A beam that roots the explanation tile to the income it describes: when a
+ * cliff is selected, a hairline spine drops from that cliff's spot on the
+ * map's baseline to the tile's top edge. (The money-flow tile used to get a
+ * cursor beam too — it crossed the legend on every scrub and read as noise,
+ * so only the selection beam remains.) Pure overlay — measured from the
+ * DOM, pointer-events: none, hidden on stacked (narrow) layouts by CSS.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -12,9 +12,7 @@ import { usePeiraStore } from "../state/store";
 import { CHART_GEOM } from "../components/StackedSweepChart";
 import { CLIFF_COLOR } from "./palette";
 
-const YOU_COLOR = "#2563eb";
-const ROOT_W = 22; // beam width where it meets the map
-const CARD_SEG = 120; // max width of the attachment segment under a card
+const CARD_INSET = 24; // spine may leave anywhere along the card's bottom, inset from the corners
 
 interface Beam {
   key: string;
@@ -32,12 +30,8 @@ export function ConnectorLayer({
   container: React.RefObject<HTMLDivElement | null>;
 }) {
   const sweep = usePeiraStore((s) => s.sweep);
-  const currentIndex = usePeiraStore((s) => s.currentIndex);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);
   const view = usePeiraStore((s) => s.view);
-  const earnings = usePeiraStore((s) =>
-    s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
-  );
 
   const [beams, setBeams] = useState<Beam[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -55,9 +49,12 @@ export function ConnectorLayer({
     const chartRect = chart.getBoundingClientRect();
     setSize({ w: root.clientWidth, h: root.clientHeight });
 
-    const { W, H, M } = CHART_GEOM;
-    // The svg letterboxes inside its flexed box (preserveAspectRatio
-    // xMidYMax): content is centered horizontally, pinned to the bottom.
+    const { W, M } = CHART_GEOM;
+    // The viewBox height adapts to the box (useFittedHeight) so the svg
+    // normally fills it exactly; read the live height off the element. The
+    // min() keeps the math right in the clamped edge cases where a
+    // letterbox remains (content centered, pinned to the bottom).
+    const H = chart.viewBox.baseVal.height || 320;
     const scale = Math.min(chartRect.width / W, chartRect.height / H);
     const contentW = W * scale;
     const contentH = H * scale;
@@ -69,29 +66,24 @@ export function ConnectorLayer({
     const plotW = W - M.left - M.right;
     const xToPx = (v: number) =>
       contentLeft + ((M.left + ((v - xMin) / (xMax - xMin)) * plotW) / W) * contentW;
-    const rootY = contentTop + (M.top / H) * contentH;
+    // The spine drops from the chart's baseline (the x-axis) to the tile.
+    const rootY = contentTop + ((H - M.bottom) / H) * contentH;
 
     const attach = (sel: string) => {
       const el = root.querySelector<HTMLElement>(sel);
       if (!el) return null;
       const r = el.getBoundingClientRect();
-      const w = Math.min(CARD_SEG, r.width * 0.6);
-      const cx = r.left - rootRect.left + r.width / 2;
-      return { cardL: cx - w / 2, cardR: cx + w / 2, cardY: r.bottom - rootRect.top };
+      return {
+        cardL: r.left - rootRect.left + CARD_INSET,
+        cardR: r.right - rootRect.left - CARD_INSET,
+        cardY: r.top - rootRect.top,
+      };
     };
 
     const next: Beam[] = [];
-    const cursorX =
-      currentIndex !== null && currentIndex < sweep.x.length
-        ? sweep.x[currentIndex]
-        : Math.max(xMin, Math.min(earnings, xMax));
-    const flow = attach(".flow-card");
-    if (flow && flow.cardY < rootY) {
-      next.push({ key: "flow", rootX: xToPx(cursorX), rootY, color: YOU_COLOR, ...flow });
-    }
     if (selectedCliff) {
       const exp = attach(".explainer");
-      if (exp && exp.cardY < rootY) {
+      if (exp && exp.cardY > rootY) {
         next.push({
           key: "cliff",
           rootX: xToPx(selectedCliff.from_x),
@@ -102,12 +94,16 @@ export function ConnectorLayer({
       }
     }
     setBeams(next);
-  }, [container, sweep, currentIndex, selectedCliff, earnings]);
+  }, [container, sweep, selectedCliff]);
 
   // Re-measure on every state change that moves a root, and when the layout
   // itself breathes (resize, cards growing/shrinking).
   useEffect(() => {
     measure();
+    // The chart's fitted viewBox height commits one render after mount and
+    // after resizes; re-measure next frame so the beams track it.
+    const raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
   }, [measure, view]);
   useEffect(() => {
     const root = container.current;
@@ -125,27 +121,21 @@ export function ConnectorLayer({
   return (
     <svg className="connector-layer" width={size.w} height={size.h} aria-hidden="true">
       {beams.map((b) => {
-        // Monotone funnel: control points at 35% / 45% of the drop, so the
-        // taper never bulges past its endpoints (an S-curve at mid-height
-        // balloons when the span is short).
+        // Hairline spine only — the wide translucent bodies crossed each
+        // other into visual noise (9A.1). The spine leaves the tile at the
+        // point of its top edge nearest the root (not the center), so it
+        // rises rather than sweeping across the screen; a filled dot marks
+        // where it lands on the map's baseline. Control points at 35% / 45%
+        // of the rise keep the curve monotone on short spans.
         const d = b.rootY - b.cardY;
         const c1 = b.cardY + 0.35 * d;
         const c2 = b.rootY - 0.45 * d;
-        const rL = b.rootX - ROOT_W / 2;
-        const rR = b.rootX + ROOT_W / 2;
-        const body =
-          `M ${b.cardL} ${b.cardY}` +
-          ` C ${b.cardL} ${c1}, ${rL} ${c2}, ${rL} ${b.rootY}` +
-          ` L ${rR} ${b.rootY}` +
-          ` C ${rR} ${c2}, ${b.cardR} ${c1}, ${b.cardR} ${b.cardY} Z`;
-        const spineX = (b.cardL + b.cardR) / 2;
+        const spineX = Math.max(b.cardL, Math.min(b.rootX, b.cardR));
         const spine = `M ${spineX} ${b.cardY} C ${spineX} ${c1}, ${b.rootX} ${c2}, ${b.rootX} ${b.rootY}`;
         return (
           <g key={b.key}>
-            {/* body alpha matches the card background so beam and card read
-                as one continuous shape */}
-            <path d={body} fill={b.color} opacity={0.06} />
-            <path d={spine} fill="none" stroke={b.color} strokeWidth={1.3} opacity={0.35} />
+            <path d={spine} fill="none" stroke={b.color} strokeWidth={2} opacity={0.5} />
+            <circle cx={b.rootX} cy={b.rootY} r={3.5} fill={b.color} opacity={0.8} />
           </g>
         );
       })}

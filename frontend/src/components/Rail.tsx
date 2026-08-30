@@ -5,6 +5,7 @@
  * session's audit trail, tagged by who ran what.
  */
 
+import { useState } from "react";
 import type { GalleryEntry } from "../state/store";
 import { usePeiraStore } from "../state/store";
 import { CHART_CHROME as C } from "../viz/palette";
@@ -93,35 +94,72 @@ export function Rail() {
   const gallery = usePeiraStore((s) => s.gallery);
   const activeId = usePeiraStore((s) => s.activeGalleryId);
   const restoreGallery = usePeiraStore((s) => s.restoreGallery);
+  const renameGallery = usePeiraStore((s) => s.renameGallery);
   const isProbing = usePeiraStore((s) => s.isProbing);
+  // Entry being renamed (double-click a row); commit on Enter or blur.
+  const [editing, setEditing] = useState<{ id: number; title: string } | null>(null);
 
   // newest first
   const entries = [...gallery].reverse();
 
-  // The tray only exists once there is history to reopen.
-  if (entries.length < 2) return null;
+  // The notebook tile is never blank: before the first extra result it says
+  // what will land here.
+  if (entries.length < 1)
+    return (
+      <p className="rail-empty">
+        Every what-if, zoom, and grid you (or the agent) run lands here as a
+        reopenable snapshot.
+      </p>
+    );
+
+  const commitRename = () => {
+    if (editing) renameGallery(editing.id, editing.title);
+    setEditing(null);
+  };
 
   return (
     <div className="rail">
-      <span className="eyebrow">Explored so far</span>
-      {entries.map((entry) => (
-        <button
-          key={entry.id}
-          className={`thumb${entry.id === activeId ? " selected" : ""}`}
-          disabled={isProbing}
-          onClick={() => restoreGallery(entry.id)}
-          title={`${entry.title} — reopen this result`}
-        >
-          <Thumb entry={entry} />
-          <span className="t-title">{entry.title}</span>
-          <span className="t-meta">
-            <span className={`voice-badge ${entry.source}`}>
-              {entry.source === "agent" ? "agent" : "you"}
+      {entries.map((entry) =>
+        editing?.id === entry.id ? (
+          <div key={entry.id} className="thumb editing">
+            <Thumb entry={entry} />
+            <input
+              className="thumb-rename"
+              type="text"
+              maxLength={60}
+              value={editing.title}
+              onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename();
+                if (e.key === "Escape") setEditing(null);
+              }}
+              onBlur={commitRename}
+              autoFocus
+              aria-label="rename this snapshot"
+            />
+          </div>
+        ) : (
+          <button
+            key={entry.id}
+            className={`thumb${entry.id === activeId ? " selected" : ""}`}
+            disabled={isProbing}
+            onClick={() => restoreGallery(entry.id)}
+            onDoubleClick={() => setEditing({ id: entry.id, title: entry.title })}
+            title={`${entry.title} — click to reopen, double-click to rename`}
+          >
+            <Thumb entry={entry} />
+            <span className="thumb-text">
+              <span className="t-title">{entry.title}</span>
+              <span className="t-meta">
+                <span className={`voice-badge ${entry.source}`}>
+                  {entry.source === "agent" ? "agent" : "you"}
+                </span>
+                <span className="t-sub">{subtitle(entry)}</span>
+              </span>
             </span>
-            <span className="t-sub">{subtitle(entry)}</span>
-          </span>
-        </button>
-      ))}
+          </button>
+        ),
+      )}
     </div>
   );
 }

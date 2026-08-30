@@ -17,7 +17,7 @@ export function ActivityTicker() {
       <span className={`ticker-who ${latest.source}`}>
         {latest.source === "agent" ? "Agent" : "You"}
       </span>
-      {latest.summary}
+      <span className="ticker-summary">{latest.summary}</span>
     </div>
   );
 }

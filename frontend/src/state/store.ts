@@ -44,6 +44,9 @@ interface PeiraState {
   currentIndex: number | null;
   /** Cliff selected for interrogation (by its from_x), shared human<->agent. */
   selectedCliff: Cliff | null;
+  /** Cliff income being hovered in the digest list — the map highlights it. */
+  hoverCliffX: number | null;
+  setHoverCliffX: (x: number | null) => void;
   /** Last binding-constraint trace; highlights its dominant program layer. */
   trace: TraceResult | null;
   annotations: Annotation[];
@@ -94,6 +97,8 @@ interface PeiraState {
   ) => void;
   /** Reopen an earlier result (human flipping back through the notebook). */
   restoreGallery: (id: number) => void;
+  /** Rename a notebook entry to what was actually found there. */
+  renameGallery: (id: number, title: string) => void;
   /** Log id up to which the agent has already been told about human actions. */
   lastAgentSeenLogId: number;
   /** Human-sourced log entries the agent hasn't seen yet (oldest first);
@@ -115,6 +120,8 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   view: { mode: "sweep" },
   currentIndex: null,
   selectedCliff: null,
+  hoverCliffX: null,
+  setHoverCliffX: (hoverCliffX) => set({ hoverCliffX }),
   trace: null,
   annotations: [],
   probeLog: [],
@@ -222,6 +229,14 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
         activeGalleryId: id,
       };
     }),
+  renameGallery: (id, title) =>
+    set((state) => ({
+      gallery: state.gallery.map((entry) =>
+        entry.id === id && title.trim().length > 0
+          ? { ...entry, title: title.trim() }
+          : entry,
+      ),
+    })),
   lastAgentSeenLogId: 0,
   digestHumanActions: () => {
     const { probeLog, lastAgentSeenLogId } = get();

@@ -7,26 +7,30 @@
  * family keeps"; taxes branch off; inactive programs sit below as quiet
  * $0 rows. A live trace pins the binding rule to its stream as a glowing
  * gate chip. Clicking a stream focuses the explainer panel.
+ *
+ * The viewBox IS the measured CSS box (scale exactly 1, viewBox units are
+ * pixels), so type renders at page size and the layout adapts to the card
+ * instead of letterboxing inside it. The box only changes on resize, so
+ * the figure stays still while the cursor drags it through incomes.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { interpolate } from "../probes/analysis";
 import { usePeiraStore } from "../state/store";
+import type { SweepResult } from "../types";
 import { CHART_CHROME as C, PROGRAM_LAYERS } from "../viz/palette";
+import { useMeasuredBox } from "../viz/useFittedBox";
 
-const W = 960;
-const X_LABEL = 218; // right edge of source labels
-const X_NODE = 230; // source node bars
-const X_KEEP = 700; // destination bar
 const NODE_W = 10;
-const GAP = 10;
-const TOP = 26;
-const PLOT_H = 240; // total ribbon height budget
-const MID = (X_NODE + X_KEEP) / 2;
+const TOP = 12;
+const GAP = 8;
+/** Vertical pitch of the inactive $0 rows. */
+const ROW_PITCH = 17;
 /** Streams thinner than this many dollars list as inactive rows instead. */
 const ACTIVE_MIN = 100;
 
-const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+const fmt = (v: number) =>
+  `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`;
 
 interface Stream {
   slug: string;
@@ -39,12 +43,22 @@ interface Stream {
   yR: number;
 }
 
-const ribbon = (y1: number, h1: number, y2: number, h2: number) =>
-  `M ${X_NODE + NODE_W} ${y1} C ${MID} ${y1}, ${MID} ${y2}, ${X_KEEP} ${y2}` +
-  ` L ${X_KEEP} ${y2 + h2} C ${MID} ${y2 + h2}, ${MID} ${y1 + h1}, ${X_NODE + NODE_W} ${y1 + h1} Z`;
-
-export function MoneyFlow() {
-  const sweep = usePeiraStore((s) => s.sweep);
+/** compact: tile mode — only live streams, no $0 rows or side notes; the
+ * expanded detail sheet shows everything. sweep overrides the store's sweep
+ * so a what-if view can show the changed household's flow. */
+export function MoneyFlow({
+  compact = false,
+  sweep: sweepOverride,
+  restIndex = null,
+}: {
+  compact?: boolean;
+  sweep?: SweepResult;
+  /** Index to rest at when the cursor is off the map — what-if sweeps can be
+   * dollar-shifted, so position is anchored by index, not by earnings. */
+  restIndex?: number | null;
+}) {
+  const storeSweep = usePeiraStore((s) => s.sweep);
+  const sweep = sweepOverride ?? storeSweep;
   const household = usePeiraStore((s) => s.household);
   const currentIndex = usePeiraStore((s) => s.currentIndex);
   const trace = usePeiraStore((s) => s.trace);
@@ -54,10 +68,26 @@ export function MoneyFlow() {
   const earnings = household.adults.reduce((a, ad) => a + ad.employment_income, 0);
   const [hoverSlug, setHoverSlug] = useState<string | null>(null);
 
+  const svgRef = useRef<SVGSVGElement>(null);
+  const { w: W, h: H } = useMeasuredBox(svgRef, { w: 960, h: 440 });
+
+  // Horizontal anchors, derived from the real width: source labels end at
+  // X_LABEL, ribbons run X_NODE → X_KEEP, the destination text sits right
+  // of X_KEEP. The floor fits the longest label ("Childcare help (CCAP) ·
+  // $NN,NNN") without clipping the tile's left edge.
+  const X_LABEL = Math.max(195, Math.min(235, 0.36 * W));
+  const X_NODE = X_LABEL + 12;
+  const X_KEEP = Math.max(X_NODE + 120, W - 170);
+  const MID = (X_NODE + X_KEEP) / 2;
+
+  const ribbon = (y1: number, h1: number, y2: number, h2: number) =>
+    `M ${X_NODE + NODE_W} ${y1} C ${MID} ${y1}, ${MID} ${y2}, ${X_KEEP} ${y2}` +
+    ` L ${X_KEEP} ${y2 + h2} C ${MID} ${y2 + h2}, ${MID} ${y1 + h1}, ${X_NODE + NODE_W} ${y1 + h1} Z`;
+
   const model = useMemo(() => {
     if (!sweep || sweep.x.length < 2) return null;
-    const cursorX =
-      currentIndex !== null && currentIndex < sweep.x.length ? sweep.x[currentIndex] : null;
+    const idx = currentIndex ?? restIndex;
+    const cursorX = idx !== null && idx < sweep.x.length ? sweep.x[idx] : null;
     const at = Math.max(sweep.x[0], Math.min(cursorX ?? earnings, sweep.x[sweep.x.length - 1]));
     const programValues = PROGRAM_LAYERS.map((layer) => ({
       ...layer,
@@ -70,9 +100,23 @@ export function MoneyFlow() {
 
     const active: Stream[] = [];
     const inactive: { slug: string; label: string }[] = [];
-    const jobStream = { slug: "job", label: "The job", color: C.inkPrimary, value: at };
-    const totalIn = at + programValues.reduce((a, p) => a + (p.value > ACTIVE_MIN ? p.value : 0), 0);
-    const scale = totalIn > 0 ? PLOT_H / totalIn : 0;
+    const activePrograms = programValues.filter((p) => p.value > ACTIVE_MIN);
+    if (!compact) {
+      for (const p of programValues) {
+        if (p.value <= ACTIVE_MIN) inactive.push({ slug: p.slug, label: p.label });
+      }
+    }
+
+    // Vertical budget: reserve room for the inactive rows and the tax
+    // outflow, and give the rest to the ribbons.
+    const nActive = 1 + activePrograms.length;
+    const taxReserve = taxes > ACTIVE_MIN ? 34 : 8;
+    const plotH = Math.max(
+      60,
+      H - TOP - inactive.length * ROW_PITCH - taxReserve - nActive * GAP - 24,
+    );
+    const totalIn = at + activePrograms.reduce((a, p) => a + p.value, 0);
+    const scale = totalIn > 0 ? plotH / totalIn : 0;
 
     let y = TOP;
     const push = (slug: string, label: string, color: string, value: number) => {
@@ -80,11 +124,8 @@ export function MoneyFlow() {
       active.push({ slug, label, color, value, h, yL: y, hR: 0, yR: 0 });
       y += h + GAP;
     };
-    push(jobStream.slug, jobStream.label, jobStream.color, jobStream.value);
-    for (const p of programValues) {
-      if (p.value > ACTIVE_MIN) push(p.slug, p.label, p.color, p.value);
-      else inactive.push({ slug: p.slug, label: p.label });
-    }
+    push("job", "The job", C.inkPrimary, at);
+    for (const p of activePrograms) push(p.slug, p.label, p.color, p.value);
 
     // right-side stack: the job arrives net of taxes
     let yr = TOP + 8;
@@ -105,18 +146,16 @@ export function MoneyFlow() {
       keepsTop: TOP + 8,
       keepsBot: yr,
     };
-  }, [sweep, earnings, currentIndex]);
+  }, [sweep, earnings, currentIndex, restIndex, H, compact]);
 
   if (!model) return null;
   const { at, net, taxes, scale, active, inactive, keepsTop, keepsBot } = model;
 
   const job = active[0];
   const taxH = Math.max(2, taxes * scale);
-  const taxY = Math.max(keepsBot, model.inactiveY) + 18;
-  // Fixed height: the cursor drags this Sankey through every income, and a
-  // viewBox that breathes per-frame makes the whole figure jitter. 440 fits
-  // the worst case (every program active, or many inactive rows + taxes).
-  const H = 440;
+  const inactiveBot = model.inactiveY + inactive.length * ROW_PITCH;
+  const taxY = Math.max(keepsBot, inactiveBot) + 10;
+  const taxOutH = Math.max(3, Math.min(taxH * 0.8, H - taxY - 6));
 
   const tracedSlug = trace?.dominant_program ?? null;
   const gateRule = trace?.binding_rules[0] ?? null;
@@ -128,6 +167,7 @@ export function MoneyFlow() {
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="xMidYMid meet"
       className="money-flow"
@@ -163,14 +203,14 @@ export function MoneyFlow() {
       {taxes > ACTIVE_MIN && (
         <>
           <path
-            d={ribbon(job.yL + job.h - taxH, taxH, taxY, taxH * 0.8)}
+            d={ribbon(job.yL + job.h - taxH, taxH, taxY, taxOutH)}
             fill="#b3b3b3"
             opacity={0.35}
           />
-          <rect x={X_KEEP} y={taxY} width={NODE_W} height={Math.max(3, taxH * 0.8)} rx={2.5} fill="#b3b3b3" />
+          <rect x={X_KEEP} y={taxY} width={NODE_W} height={taxOutH} rx={2.5} fill="#b3b3b3" />
           <text
             x={X_KEEP + 20}
-            y={taxY + Math.max(3, taxH * 0.8) / 2 + 4}
+            y={taxY + taxOutH / 2 + 4}
             fontSize={11.5}
             fill={C.inkMuted}
             style={{ fontVariantNumeric: "tabular-nums" }}
@@ -201,7 +241,7 @@ export function MoneyFlow() {
               x={X_LABEL}
               y={s.yL + Math.min(s.h / 2, 24) + 4}
               textAnchor="end"
-              fontSize={12.5}
+              fontSize={12}
               fill={C.inkPrimary}
               fontWeight={emphasized ? 600 : 400}
               style={{ fontVariantNumeric: "tabular-nums" }}
@@ -214,7 +254,7 @@ export function MoneyFlow() {
 
       {/* inactive programs: quiet $0 rows */}
       {inactive.map((p, i) => {
-        const iy = model.inactiveY + i * 19;
+        const iy = model.inactiveY + i * ROW_PITCH;
         return (
           <g
             key={`i-${p.slug}`}
@@ -235,6 +275,7 @@ export function MoneyFlow() {
             <text x={X_LABEL} y={iy + 7} textAnchor="end" fontSize={11} fill={C.inkMuted}>
               {p.label} · $0
             </text>
+            <title>{`${p.label}: nothing at this income — click to read about it`}</title>
           </g>
         );
       })}
@@ -244,7 +285,7 @@ export function MoneyFlow() {
         <>
           {(() => {
             const tanfIdx = inactive.findIndex((p) => p.slug === "tanf");
-            const ty = model.inactiveY + tanfIdx * 19 + 3;
+            const ty = model.inactiveY + tanfIdx * ROW_PITCH + 3;
             return (
               <>
                 <path
@@ -298,13 +339,16 @@ export function MoneyFlow() {
         rx={4}
         fill={C.inkPrimary}
       />
-      <text x={X_KEEP + 24} y={(keepsTop + keepsBot) / 2 - 7} fontSize={12} fill={C.inkSecondary}>
-        What your family keeps
+      {/* the amount itself is the HTML hero number in the card header;
+          two stacked lines so nothing clips at the card's right edge */}
+      <text x={X_KEEP + 22} y={(keepsTop + keepsBot) / 2 - 18} fontSize={11.5} fill={C.inkSecondary}>
+        <tspan x={X_KEEP + 22}>What your</tspan>
+        <tspan x={X_KEEP + 22} dy={14}>family keeps</tspan>
       </text>
       <text
-        x={X_KEEP + 24}
-        y={(keepsTop + keepsBot) / 2 + 17}
-        fontSize={24}
+        x={X_KEEP + 22}
+        y={(keepsTop + keepsBot) / 2 + 16}
+        fontSize={13}
         fontWeight={600}
         fill={C.inkPrimary}
         style={{ fontVariantNumeric: "tabular-nums" }}

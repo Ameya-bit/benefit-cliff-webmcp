@@ -9,21 +9,26 @@ import {
 } from "../viz/palette";
 import { AnnotationPins } from "../viz/AnnotationPins";
 import { useAnimatedMatrix } from "../viz/useAnimatedMatrix";
+import { useFittedHeight } from "../viz/useFittedBox";
 
 // Wide aspect: the map is the ground of the page (roughly the bottom half)
-// and the detail cards grow out of it. Rendered near 1:1 scale, so in-chart
-// type is sized like page type. Geometry is exported for the connector beams.
+// and the detail cards grow out of it. The viewBox height adapts to the
+// box aspect (useFittedHeight) so the SVG never letterboxes and in-chart
+// type renders at page-type sizes. Geometry is exported for the connector
+// beams; the live height is read from the svg's viewBox there.
 const W = 1240;
-const H = 320;
-const M = { top: 46, right: 14, bottom: 30, left: 56 };
+const FALLBACK_H = 320;
+const M = { top: 40, right: 14, bottom: 30, left: 56 };
 const PLOT_W = W - M.left - M.right;
-const PLOT_H = H - M.top - M.bottom;
+/** Cliff pills stack upward when neighbors crowd within a pill's width. */
+const BADGE_SPACING = 84;
 
-export const CHART_GEOM = { W, H, M };
+export const CHART_GEOM = { W, M };
 
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
-const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+const fmt = (v: number) =>
+  `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`;
 
 /** Cumulative stack boundaries: row 0 is the base (earnings after taxes),
  * row k adds program layer k. The last row is household net income. */
@@ -49,6 +54,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const setCurrentIndex = usePeiraStore((s) => s.setCurrentIndex);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);
   const selectCliff = usePeiraStore((s) => s.selectCliff);
+  const hoverCliffX = usePeiraStore((s) => s.hoverCliffX);
   const trace = usePeiraStore((s) => s.trace);
   const annotations = usePeiraStore((s) => s.annotations);
   const baselineSweep = usePeiraStore((s) => s.baselineSweep);
@@ -56,6 +62,8 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
     s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
   );
   const svgRef = useRef<SVGSVGElement>(null);
+  const H = useFittedHeight(svgRef, W, FALLBACK_H, 220, 560);
+  const PLOT_H = H - M.top - M.bottom;
   const [hoverPx, setHoverPx] = useState<number | null>(null);
   // A click on the plot pins the cursor: the money flow below keeps showing
   // that income after the pointer leaves. Click again (near the pin) to release.
@@ -145,6 +153,37 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   // net_drop is negative (a loss); the worst cliff is the most negative.
   const worstDrop = Math.min(...sweep.cliffs.map((c) => c.net_drop), 0);
 
+  // Badges hug the curve: each pill sits just above its own drop point
+  // (short stem, quiet sky), stacking upward where cliffs crowd together.
+  // A stack that would climb past the top of the sky spills into a side
+  // column instead of printing pills on top of each other (px is the pill
+  // anchor; cx stays the true drop point, so the stem points home).
+  const badges: {
+    cliff: (typeof sweep.cliffs)[number];
+    cx: number;
+    px: number;
+    topY: number;
+    y: number;
+  }[] = [];
+  const collides = (px: number, y: number) =>
+    badges.some((p) => Math.abs(px - p.px) < 80 && Math.abs(y - p.y) < 22);
+  // Lay out left-to-right (cliffs arrive biggest-first) so crowded
+  // neighbors stack into tidy columns before any of them spills sideways.
+  for (const cliff of [...sweep.cliffs].sort((a, b) => a.from_x - b.from_x)) {
+    const cx = sx(cliff.from_x);
+    const topY = sy(rows[rows.length - 1][sweep.x.indexOf(cliff.from_x)]);
+    const spot = (() => {
+      for (const dx of [0, BADGE_SPACING, -BADGE_SPACING, BADGE_SPACING * 2, -BADGE_SPACING * 2]) {
+        const px = Math.min(Math.max(cx + dx, M.left + 38), W - M.right - 38);
+        for (let y = topY - 26; y >= 14; y -= 25) {
+          if (!collides(px, y)) return { px, y };
+        }
+      }
+      return { px: cx, y: 14 };
+    })();
+    badges.push({ cliff, cx, topY, ...spot });
+  }
+
   return (
     <div className="chart-wrap">
       <svg
@@ -215,6 +254,20 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         {/* axis baseline */}
         <line x1={M.left} y1={sy(Math.max(0, yMin))} x2={W - M.right} y2={sy(Math.max(0, yMin))} stroke={C.axis} strokeWidth={1} />
 
+        {/* axis titles (plain language, same pattern as the heatmap) */}
+        <text
+          x={W - M.right - 4}
+          y={H - M.bottom - 8}
+          textAnchor="end"
+          fontSize={12.5}
+          fill={C.inkMuted}
+        >
+          yearly earnings →
+        </text>
+        <text x={4} y={16} fontSize={12.5} fill={C.inkMuted}>
+          what your family keeps ↑
+        </text>
+
         {/* "you are here": the household's actual earnings, anchored to the
             net-income line with the number spelled out */}
         {householdEarnings >= xMin && householdEarnings <= xMax && (() => {
@@ -256,14 +309,11 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           );
         })()}
 
-        {/* cliff badges — only the worst cliff gets the filled pill */}
-        {sweep.cliffs.map((cliff, i) => {
-          const cx = sx(cliff.from_x);
-          const topY = sy(rows[rows.length - 1][sweep.x.indexOf(cliff.from_x)]);
-          const badgeY = 12 + (i % 2) * 18;
+        {/* cliff badges — every cliff gets a pill; selection reads as a
+            solid fill, the worst as a heavier ring */}
+        {badges.map(({ cliff, cx, px, topY, y: badgeY }) => {
           const isSelected = selectedCliff?.from_x === cliff.from_x;
           const isWorst = cliff.net_drop === worstDrop;
-          const pill = isWorst || isSelected;
           return (
             <g
               key={cliff.from_x}
@@ -285,24 +335,22 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
               }}
             >
               {/* generous invisible hit area — the badge is a control */}
-              <rect x={cx - 38} y={badgeY - 12} width={76} height={23} fill="transparent" />
-              <line x1={cx} y1={badgeY + 10} x2={cx} y2={topY} stroke={CLIFF_COLOR} strokeWidth={0.9} strokeDasharray="3 3" opacity={0.55} />
+              <rect x={px - 38} y={badgeY - 12} width={76} height={23} fill="transparent" />
+              <line x1={px} y1={badgeY + 10} x2={cx} y2={topY} stroke={CLIFF_COLOR} strokeWidth={0.9} strokeDasharray="3 3" opacity={0.55} />
               <circle cx={cx} cy={topY} r={4} fill={CLIFF_COLOR} />
-              {pill && (
-                <rect
-                  className="badge-pill"
-                  x={cx - 36}
-                  y={badgeY - 10.5}
-                  width={72}
-                  height={21}
-                  rx={10.5}
-                  fill={isSelected ? CLIFF_COLOR : "rgba(204,59,59,0.08)"}
-                  stroke={CLIFF_COLOR}
-                  strokeWidth={isSelected ? 1.4 : 1}
-                />
-              )}
+              <rect
+                className="badge-pill"
+                x={px - 36}
+                y={badgeY - 10.5}
+                width={72}
+                height={21}
+                rx={10.5}
+                fill={isSelected ? CLIFF_COLOR : `rgba(204,59,59,${isWorst ? 0.14 : 0.07})`}
+                stroke={CLIFF_COLOR}
+                strokeWidth={isSelected ? 1.4 : isWorst ? 1.2 : 0.8}
+              />
               <text
-                x={cx}
+                x={px}
                 y={badgeY + 4.5}
                 textAnchor="middle"
                 fontSize={12.5}
@@ -314,6 +362,20 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
             </g>
           );
         })}
+
+        {/* a digest row is being hovered: light up that cliff on the map */}
+        {hoverCliffX !== null && hoverCliffX >= xMin && hoverCliffX <= xMax && (
+          <line
+            x1={sx(hoverCliffX)}
+            y1={M.top}
+            x2={sx(hoverCliffX)}
+            y2={H - M.bottom}
+            stroke={CLIFF_COLOR}
+            strokeWidth={1.6}
+            strokeDasharray="4 3"
+            pointerEvents="none"
+          />
+        )}
 
         {/* trace point marker */}
         {trace && trace.at >= xMin && trace.at <= xMax && (

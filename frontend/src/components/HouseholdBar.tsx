@@ -10,7 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
 import { HouseholdCard } from "./HouseholdCard";
 
-const fmt = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+const fmt = (v: number) =>
+  `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`;
 
 function plural(n: number, word: string): string {
   return n === 1 ? `one ${word}` : `${n} ${word}s`;
