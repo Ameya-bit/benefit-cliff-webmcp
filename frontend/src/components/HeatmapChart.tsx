@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
 import type { HeatmapResult } from "../types";
-import { CHART_CHROME as C, CLIFF_COLOR } from "../viz/palette";
+import { CHART_CHROME as C, CLIFF_COLOR, programLabel } from "../viz/palette";
 import { useFittedHeight } from "../viz/useFittedBox";
 
 const W = 1240;
@@ -15,13 +15,19 @@ const fmtK = (v: number) => `$${Math.round(v / 1000)}k`;
 const fmt = (v: number) =>
   `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`;
 
-/** Sequential single-hue ramp (blue), dark -> light with magnitude. */
+/** Sequential single-hue ramp (blue), dark -> light with magnitude. The
+ * dark end is deliberately soft: the gradient is terrain, the red cliff
+ * shadows are the message, and they must stay visible on every cell. */
 function rampColor(t: number): string {
-  const lo = [13, 54, 107]; // #0d366b
-  const hi = [205, 226, 251]; // #cde2fb
+  const lo = [72, 112, 168]; // #4870a8
+  const hi = [214, 231, 251]; // #d6e7fb
   const c = lo.map((l, i) => Math.round(l + (hi[i] - l) * t));
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
+
+/** Opacities for the short "drop shadow" painted to the right of each wall
+ * cell — depth for the cliff-edge metaphor, fading over ~3 columns. */
+const WALL_FADE = [0.26, 0.13, 0.05];
 
 /** Net resources over earnings × childcare cost. Cliff drops along rising
  * earnings are drawn as red edges, and the household sits on the map as a
@@ -53,6 +59,39 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
     }
   });
 
+  // Name the walls. Ridges cluster into vertical wall systems (a wall can
+  // lean as childcare cost changes); each cluster is labeled with the
+  // program that ends there, matched by earnings position against the 1-D
+  // sweep's attributed cliffs — the same numbers the agent narrates.
+  const sweepCliffs = usePeiraStore((s) => s.sweep?.cliffs);
+  const wallLabels = (() => {
+    if (!ridges.length) return [];
+    const clusters: { xs: number[]; topI: number; topJ: number }[] = [];
+    for (const r of [...ridges].sort((a, b) => a.j - b.j)) {
+      const x = xAt(r.j + 1);
+      const hit = clusters.find(
+        (c) => Math.abs(c.xs.reduce((s, v) => s + v, 0) / c.xs.length - x) < 6_000,
+      );
+      if (!hit) {
+        clusters.push({ xs: [x], topI: r.i, topJ: r.j });
+      } else {
+        hit.xs.push(x);
+        if (r.i > hit.topI) {
+          hit.topI = r.i;
+          hit.topJ = r.j;
+        }
+      }
+    }
+    return clusters.flatMap((c) => {
+      // A wall must span several childcare rows to deserve a name.
+      if (c.xs.length < 4) return [];
+      const wallX = c.xs.reduce((s, v) => s + v, 0) / c.xs.length;
+      const cliff = sweepCliffs?.find((cl) => Math.abs(cl.from_x - wallX) < 5_000);
+      if (!cliff) return [];
+      return [{ topJ: c.topJ, topI: c.topI, text: `${programLabel(cliff.dominant_program)} ends` }];
+    });
+  })();
+
   // The household's own spot on the map.
   const earnings = household.adults.reduce((a, ad) => a + ad.employment_income, 0);
   const childcare = household.children.reduce((a, c) => a + c.yearly_childcare_expenses, 0);
@@ -73,7 +112,7 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         className="stacked-chart"
-        aria-label={`Earnings × childcare map: earnings ${fmtK(heatmap.axis_x.min)} to ${fmtK(heatmap.axis_x.max)} by childcare cost ${fmtK(heatmap.axis_y.min)} to ${fmtK(heatmap.axis_y.max)}; net resources ${fmt(vMin)} to ${fmt(vMax)}; red edges mark benefit cliffs`}
+        aria-label={`Earnings × childcare map: earnings ${fmtK(heatmap.axis_x.min)} to ${fmtK(heatmap.axis_x.max)} by childcare cost ${fmtK(heatmap.axis_y.min)} to ${fmtK(heatmap.axis_y.max)}; net resources ${fmt(vMin)} to ${fmt(vMax)}; red walls mark earnings where one more dollar cuts off a benefit; the widest clear stretch between walls is the safe range`}
         onPointerLeave={() => setHover(null)}
       >
         {rows.map((row, i) =>
@@ -89,6 +128,23 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
             />
           )),
         )}
+        {/* each wall cell casts a short shadow to its right — the drop */}
+        {ridges.map(({ i, j }) =>
+          WALL_FADE.map(
+            (alpha, k) =>
+              j + 1 + k < nx && (
+                <rect
+                  key={`f${i}-${j}-${k}`}
+                  x={M.left + (j + 1 + k) * cellW}
+                  y={M.top + (ny - 1 - i) * cellH}
+                  width={cellW + 0.5}
+                  height={cellH + 0.5}
+                  fill={`rgba(204,59,59,${alpha})`}
+                  pointerEvents="none"
+                />
+              ),
+          ),
+        )}
         {/* cliff edges */}
         {ridges.map(({ i, j }) => (
           <line
@@ -98,11 +154,33 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
             x2={M.left + (j + 1) * cellW}
             y2={M.top + (ny - i) * cellH}
             stroke={CLIFF_COLOR}
-            strokeWidth={2.2}
+            strokeWidth={2.6}
             opacity={0.9}
             pointerEvents="none"
           />
         ))}
+        {/* wall names — the program whose exit builds each wall */}
+        {wallLabels.map((wl) => {
+          const wallX = M.left + (wl.topJ + 1) * cellW;
+          const flip = wallX > W - 220;
+          return (
+            <text
+              key={`wl${wl.topJ}`}
+              x={flip ? wallX - 8 : wallX + 8}
+              y={M.top + (ny - 1 - wl.topI) * cellH + 17}
+              textAnchor={flip ? "end" : "start"}
+              fontSize={12.5}
+              fontWeight={600}
+              fill="#8f1d1d"
+              stroke="#ffffff"
+              strokeWidth={3.5}
+              paintOrder="stroke"
+              pointerEvents="none"
+            >
+              {wl.text}
+            </text>
+          );
+        })}
         {hover && (
           <rect
             x={M.left + hover.j * cellW}
@@ -162,8 +240,8 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
         </text>
         <text x={12} y={M.top - 10} fontSize={12.5} fill={C.inkSecondary}>
           childcare cost ↑ · lighter = your family keeps more ({fmt(vMin)} → {fmt(vMax)}) ·{" "}
-          <tspan fill={CLIFF_COLOR} fontWeight={600}>red edges</tspan> = where one more dollar
-          earned costs you a benefit
+          <tspan fill={CLIFF_COLOR} fontWeight={600}>red walls</tspan> = one more dollar there
+          cuts off a benefit · the widest clear stretch is your safe range
         </text>
       </svg>
       {hover && (
@@ -171,6 +249,18 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
           <div className="tt-title">keeps {fmt(rows[hover.i][hover.j])}</div>
           <div className="tt-row">earnings <b>{fmt(xAt(hover.j))}</b></div>
           <div className="tt-row">childcare cost <b>{fmt(yAt(hover.i))}</b></div>
+          {(() => {
+            const row = rows[hover.i];
+            const wall =
+              hover.j < nx - 1 && row[hover.j + 1] - row[hover.j] < RIDGE_DROP;
+            if (!wall) return null;
+            return (
+              <div className="tt-row">
+                next {fmt(xAt(hover.j + 1) - xAt(hover.j))} earned here costs{" "}
+                <b>{fmt(Math.abs(row[hover.j + 1] - row[hover.j]))}</b>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
