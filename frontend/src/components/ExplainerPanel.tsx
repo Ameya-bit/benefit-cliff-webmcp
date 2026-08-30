@@ -292,7 +292,7 @@ function PinNote({ at }: { at: number }) {
       <button className="btn" onClick={submit}>
         pin
       </button>
-      <button className="btn" onClick={() => setText(null)}>
+      <button className="btn" aria-label="cancel note" onClick={() => setText(null)}>
         ×
       </button>
     </span>

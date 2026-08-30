@@ -47,6 +47,11 @@ export function ScenarioLibrary() {
         household card and maps the benefits landscape; the question is a
         good opener to ask the agent.
       </p>
+      <p className="fine-print">
+        Estimates from a computer model of Colorado&rsquo;s 2026 rules
+        (policyengine-us) — not official benefits advice. Check with your
+        caseworker before acting on anything here.
+      </p>
       {webmcpAvailable === false && (
         <p className="agent-hint">
           No agent is attached to this page. Open it in ChatGPT&rsquo;s

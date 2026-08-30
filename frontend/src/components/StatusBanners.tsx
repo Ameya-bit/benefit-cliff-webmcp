@@ -57,19 +57,26 @@ export function StatusBanners() {
   return (
     <>
       {engine === "checking" && (
-        <div className="status-banner warming">
-          Waking up the benefits engine — probes unlock in a few seconds…
+        <div className="status-banner warming" role="status">
+          Starting the benefits engine — you can run numbers in a few
+          seconds…
         </div>
       )}
       {engine === "down" && (
-        <div className="status-banner down">
-          The benefits engine isn&rsquo;t responding. If you&rsquo;re running
-          locally: <code>cd backend && uv run uvicorn app.main:app</code>
+        <div className="status-banner down" role="alert">
+          We can&rsquo;t reach the benefits engine right now. Please try again
+          in a minute.
+          {import.meta.env.DEV && (
+            <>
+              {" "}
+              Running locally? <code>cd backend && uv run uvicorn app.main:app</code>
+            </>
+          )}
         </div>
       )}
       {probeError && (
-        <div className="status-banner error">
-          <span>probe failed: {probeError}</span>
+        <div className="status-banner error" role="alert">
+          <span>That didn&rsquo;t work: {probeError}</span>
           <button
             className="banner-dismiss"
             aria-label="dismiss error"

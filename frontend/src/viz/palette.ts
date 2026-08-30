@@ -22,7 +22,7 @@ export const PROGRAM_LAYERS: ProgramLayer[] = [
   { slug: "aca", label: "Insurance credit (ACA)", color: "#1baf7a" },
   { slug: "snap", label: "Food aid (SNAP)", color: "#eda100" },
   { slug: "tanf", label: "Cash aid (TANF)", color: "#e87ba4" },
-  { slug: "childcare", label: "Childcare help (CCAP)", color: "#008300" },
+  { slug: "childcare", label: "Childcare help (CCCAP)", color: "#008300" },
   { slug: "eitc", label: "Earned-income credit", color: "#4a3aa7" },
   { slug: "ctc", label: "Child tax credit", color: "#e34948" },
 ];

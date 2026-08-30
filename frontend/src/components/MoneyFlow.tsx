@@ -73,7 +73,7 @@ export function MoneyFlow({
 
   // Horizontal anchors, derived from the real width: source labels end at
   // X_LABEL, ribbons run X_NODE → X_KEEP, the destination text sits right
-  // of X_KEEP. The floor fits the longest label ("Childcare help (CCAP) ·
+  // of X_KEEP. The floor fits the longest label ("Childcare help (CCCAP) ·
   // $NN,NNN") without clipping the tile's left edge.
   const X_LABEL = Math.max(195, Math.min(235, 0.36 * W));
   const X_NODE = X_LABEL + 12;

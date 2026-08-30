@@ -12,7 +12,7 @@ export function ActivityTicker() {
   const isProbing = usePeiraStore((s) => s.isProbing);
   if (!latest) return null;
   return (
-    <div className="ticker" key={latest.id}>
+    <div className="ticker" key={latest.id} role="status">
       <span className={`pulse ${latest.source}${isProbing ? " live" : ""}`} />
       <span className={`ticker-who ${latest.source}`}>
         {latest.source === "agent" ? "Agent" : "You"}

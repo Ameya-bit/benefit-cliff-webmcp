@@ -61,7 +61,7 @@ npm run dev   # http://localhost:5173
 ```
 
 **With an agent:**
-- **ChatGPT desktop app** — open `http://localhost:5173` in its built-in browser; the tools appear automatically as site tools. Try: *"I'm a single parent in Denver making $50k, my 3-year-old's daycare runs $15k a year, and we're already on childcare assistance (CCAP) — is chasing a big raise actually worth it?"*
+- **ChatGPT desktop app** — open `http://localhost:5173` in its built-in browser; the tools appear automatically as site tools. Try: *"I'm a single parent in Denver making $50k, my 3-year-old's daycare runs $15k a year, and we're already on childcare assistance (CCCAP) — is chasing a big raise actually worth it?"*
 - **Chrome** — enable `chrome://flags/#enable-webmcp-testing`, then inspect via DevTools' WebMCP panel.
 - **No agent** — the bench works standalone; scenario cards and hand controls cover the full probe vocabulary except the 2-D grid.
 

@@ -130,6 +130,7 @@ export function HouseholdCard() {
             <button
               className="member-remove"
               title="remove adult"
+              aria-label={`remove adult ${i + 1}`}
               onClick={() =>
                 setDraft({ ...draft, adults: draft.adults.filter((_, j) => j !== i) })
               }
@@ -166,6 +167,7 @@ export function HouseholdCard() {
           <button
             className="member-remove"
             title="remove child"
+            aria-label={`remove child ${i + 1}`}
             onClick={() =>
               setDraft({ ...draft, children: draft.children.filter((_, j) => j !== i) })
             }

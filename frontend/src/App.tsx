@@ -38,7 +38,7 @@ function CanvasArea() {
       <>
         <div className="mode-banner view-banner">
           <span>
-            <b>safety grid</b> — where earnings × childcare cost keep you safe
+            <b>earnings × childcare map</b> — where your family comes out ahead
           </span>
           {backToMap}
         </div>
@@ -251,7 +251,7 @@ export default function App() {
               <div className="map-head">
                 <span className="eyebrow">
                   {view.mode === "heatmap"
-                    ? "Safety grid"
+                    ? "Earnings × childcare map"
                     : "What you keep at every income"}
                 </span>
                 <MapControls />

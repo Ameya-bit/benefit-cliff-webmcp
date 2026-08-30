@@ -84,7 +84,7 @@ function Thumb({ entry }: { entry: GalleryEntry }) {
 
 /** One-line gist: what this snapshot found. */
 function subtitle(entry: GalleryEntry): string {
-  if (entry.kind === "heatmap") return "safety grid";
+  if (entry.kind === "heatmap") return "earnings × childcare map";
   if (entry.view.mode === "diff") return "vs today";
   const n = entry.sweep?.cliffs.length ?? 0;
   return `${n} cliff${n === 1 ? "" : "s"}`;

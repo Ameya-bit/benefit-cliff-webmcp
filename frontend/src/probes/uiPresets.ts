@@ -17,10 +17,10 @@ export interface PolicyDial {
 }
 
 export const POLICY_DIALS: PolicyDial[] = [
-  { id: "ccap_exit_smi_rate", label: "Childcare exit limit (× state median)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
-  { id: "ccap_entry_smi_rate", label: "Childcare entry limit (× state median)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
-  { id: "snap_gross_income_limit", label: "Food-aid gross limit (× poverty line)", isBoolean: false, defaultValue: 1.3, min: 1, max: 3, step: 0.1 },
-  { id: "ctc_fully_refundable", label: "Child tax credit fully refundable", isBoolean: true, defaultValue: 0, min: 0, max: 1, step: 1 },
+  { id: "ccap_exit_smi_rate", label: "Income limit to keep childcare help (× CO median income)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
+  { id: "ccap_entry_smi_rate", label: "Income limit to start childcare help (× CO median income)", isBoolean: false, defaultValue: 0.85, min: 0.5, max: 2, step: 0.05 },
+  { id: "snap_gross_income_limit", label: "Income limit for food aid (× poverty line)", isBoolean: false, defaultValue: 1.3, min: 1, max: 3, step: 0.1 },
+  { id: "ctc_fully_refundable", label: "Child tax credit paid even with no tax bill", isBoolean: true, defaultValue: 0, min: 0, max: 1, step: 1 },
 ];
 
 export interface DiffPreset {

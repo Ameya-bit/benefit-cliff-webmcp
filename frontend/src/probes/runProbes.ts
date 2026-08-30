@@ -91,7 +91,7 @@ export async function runAblation(
     store.logProbe({
       source,
       tool: "ablate_program",
-      summary: `${program} knocked out — ${Object.keys(result.interactions).length} other program(s) moved`,
+      summary: `without ${programLabel(program)} — ${Object.keys(result.interactions).length} other program${Object.keys(result.interactions).length === 1 ? "" : "s"} moved`,
     });
     store.pushGalleryFromCurrent("ablate", `Without ${programLabel(program)}`, source);
     return result;
@@ -137,7 +137,7 @@ export async function runTrace(
     store.logProbe({
       source,
       tool: "trace_binding_constraint",
-      summary: `at $${at.toLocaleString()}: ${trace.dominant_program} binds`,
+      summary: `the rule at $${at.toLocaleString()}: ${programLabel(trace.dominant_program)}`,
     });
     return trace;
   });
@@ -159,7 +159,7 @@ export async function runSweep2D(
     store.logProbe({
       source,
       tool: "sweep_2d",
-      summary: `earnings × childcare cost grid (${axisX.count}×${axisY.count})`,
+      summary: `mapped earnings × childcare (${axisX.count}×${axisY.count} grid)`,
     });
     store.pushGalleryFromCurrent("heatmap", "Earnings × childcare map", source);
     return heatmap;
@@ -224,8 +224,8 @@ export async function runMinimalFix(
       source,
       tool: "find_minimal_fix",
       summary: result.found
-        ? `${result.parameter!.id}: ${result.minimal_value} (${result.healed ? "healed" : "best effort"})`
-        : `no whitelisted fix for ${result.program}`,
+        ? `${result.healed ? "cliff removed" : "best effort"} — ${result.parameter!.label}: ${result.parameter!.default} → ${result.minimal_value}`
+        : `no allowed rule change removes this cliff (${programLabel(result.program)})`,
     });
     return result;
   }, "Searching for the smallest rule change that removes this cliff — each candidate rebuilds the full Colorado rules (~6 s per try, up to a minute)…");

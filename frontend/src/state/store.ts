@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { programLabel } from "../viz/palette";
 import type {
   Annotation,
   CanvasView,
@@ -182,7 +183,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
             logEntry({
               source,
               tool: "select_cliff",
-              summary: `interrogating the $${cliff.from_x.toLocaleString()} cliff (${cliff.dominant_program})`,
+              summary: `looking closer at the $${cliff.from_x.toLocaleString()} cliff (${programLabel(cliff.dominant_program)})`,
             }),
             ...state.probeLog,
           ]
