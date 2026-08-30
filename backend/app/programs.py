@@ -26,7 +26,10 @@ PROGRAMS: dict[str, tuple[str, ...]] = {
 ABLATION_VARIABLES: dict[str, tuple[str, ...]] = {
     "snap": ("snap",),
     "tanf": ("tanf", "is_tanf_non_cash_eligible"),
-    "medicaid": ("medicaid",),
+    # household_net_income counts Medicaid via medicaid_cost (the
+    # household_health_benefits list), not the display variable `medicaid` —
+    # neutralize both or the ablated map keeps the baseline net income.
+    "medicaid": ("medicaid", "medicaid_cost"),
     "chip": ("per_capita_chip",),
     "childcare": ("co_child_care_subsidies",),
     "eitc": ("eitc", "co_eitc"),
