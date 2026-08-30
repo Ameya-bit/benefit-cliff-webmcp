@@ -158,3 +158,17 @@ def test_sweep2d_varies_along_both_axes(client):
     assert matrix.shape == (5, 9)
     assert np.ptp(matrix, axis=0).max() > 1_000  # varies with childcare cost
     assert np.ptp(matrix, axis=1).max() > 10_000  # varies with income
+
+
+def test_rate_limiter_blocks_burst_and_recovers():
+    """/reform and /minimal_fix carry a sliding-window lid (expensive engine
+    rebuilds); the window logic is tested directly so no reform builds run."""
+    from app.main import _sliding_window_allows
+
+    key = ("unit-test-client", "/minimal_fix")
+    # Arrange/Act: three calls inside the window are allowed…
+    assert all(_sliding_window_allows(key, 3, 120.0, now=t) for t in (0.0, 1.0, 2.0))
+    # …the fourth in the same window is blocked…
+    assert not _sliding_window_allows(key, 3, 120.0, now=3.0)
+    # …and once the window slides past the burst, calls flow again.
+    assert _sliding_window_allows(key, 3, 120.0, now=125.0)

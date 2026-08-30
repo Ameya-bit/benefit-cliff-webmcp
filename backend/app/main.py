@@ -6,9 +6,11 @@ request, all state lives in the frontend. Every response uses the
 """
 
 import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -40,6 +42,57 @@ app.add_middleware(
 
 def envelope(data) -> dict:
     return {"success": True, "data": data, "error": None}
+
+
+# --- rate limiting ---------------------------------------------------------
+# /reform rebuilds the full rules system (~6s) and /minimal_fix runs up to
+# ~8 such builds. One warm engine serves everyone during judging, so these
+# two endpoints get a per-client sliding-window lid; everything else is
+# cheap enough to leave open. In-process on purpose: single instance.
+
+RATE_LIMITS: dict[str, tuple[int, float]] = {
+    "/reform": (10, 60.0),  # (max calls, window seconds)
+    "/minimal_fix": (3, 120.0),
+}
+_request_log: dict[tuple[str, str], deque[float]] = defaultdict(deque)
+
+
+class RateLimited(Exception):
+    pass
+
+
+def _sliding_window_allows(
+    key: tuple[str, str], max_calls: int, window: float, now: float
+) -> bool:
+    log = _request_log[key]
+    while log and now - log[0] > window:
+        log.popleft()
+    if len(log) >= max_calls:
+        return False
+    log.append(now)
+    return True
+
+
+def enforce_rate_limit(request: Request) -> None:
+    limit = RATE_LIMITS.get(request.url.path)
+    if limit is None:
+        return
+    max_calls, window = limit
+    client = request.client.host if request.client else "unknown"
+    if not _sliding_window_allows(
+        (client, request.url.path), max_calls, window, time.monotonic()
+    ):
+        raise RateLimited(
+            "The policy engine is busy with rule changes — wait a minute and try again."
+        )
+
+
+@app.exception_handler(RateLimited)
+async def rate_limited_handler(request: Request, exc: RateLimited):
+    return JSONResponse(
+        status_code=429,
+        content={"success": False, "data": None, "error": str(exc)},
+    )
 
 
 @app.exception_handler(ValueError)
@@ -136,7 +189,7 @@ def trace(req: TraceRequest):
     return envelope(engine.run_trace(req.household, req.at))
 
 
-@app.post("/reform")
+@app.post("/reform", dependencies=[Depends(enforce_rate_limit)])
 def reform(req: ReformRequest):
     overrides = build_reform_overrides(req.reforms)
     baseline = engine.run_sweep(req.household, req.axis)
@@ -144,7 +197,7 @@ def reform(req: ReformRequest):
     return envelope({"baseline": baseline, "reformed": reformed})
 
 
-@app.post("/minimal_fix")
+@app.post("/minimal_fix", dependencies=[Depends(enforce_rate_limit)])
 def minimal_fix(req: MinimalFixRequest):
     return envelope(engine.run_minimal_fix(req.household, req.axis, req.cliff_at))
 
