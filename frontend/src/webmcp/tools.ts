@@ -18,6 +18,12 @@
  *   piggybacks a digest of human actions the agent hasn't seen (card edits,
  *   cliff clicks, human-run probes), and get_workbench reads the full bench
  *   on demand. The shared canvas stays bidirectional.
+ * - readOnlyHint semantics: readOnly marks tools with no durable effect on
+ *   the bench — they compute and render. That includes edit_policy and
+ *   find_minimal_fix: policy edits are simulations drawn on the canvas
+ *   (one click restores current law), never real-world writes. The write
+ *   tools are the ones that change what later probes operate on: the
+ *   household under study (set_household) and pinned notes (annotate).
  */
 
 import { z } from "zod";
