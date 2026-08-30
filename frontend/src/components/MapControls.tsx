@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { runDiff, runSweep } from "../probes/runProbes";
+import { runDiff, runSweep, runSweep2D } from "../probes/runProbes";
 import { DIFF_PRESETS, type DiffPreset } from "../probes/uiPresets";
 import { usePeiraStore } from "../state/store";
 
@@ -61,6 +61,9 @@ export function MapControls() {
   const zoomRef = useDismiss(zoomOpen, () => setZoomOpen(false));
 
   const available = DIFF_PRESETS.filter((p) => p.isAvailable(household));
+  // Mirrors the sweep_2d tool's guard: the map's y axis is a child's
+  // childcare cost, so it needs at least one child on the card.
+  const hasChild = household.children.length > 0;
   const axis = sweep?.axis;
   const isZoomed =
     axis && (axis.min !== DEFAULT_RANGE.min || axis.max !== DEFAULT_RANGE.max);
@@ -84,7 +87,7 @@ export function MapControls() {
 
   return (
     <div className="map-controls">
-      {available.length > 0 && (
+      {(available.length > 0 || hasChild) && (
         <div className="menu-wrap" ref={whatIfRef}>
           <button
             className="btn"
@@ -154,6 +157,24 @@ export function MapControls() {
                   </button>
                 );
               })}
+              {hasChild && (
+                <button
+                  className="menu-item"
+                  role="menuitem"
+                  disabled={isProbing}
+                  title="One map of every earnings × childcare-cost combination — the red walls are benefit cliffs"
+                  onClick={() => {
+                    closeWhatIf();
+                    void runSweep2D(
+                      { variable: "employment_income", min: 0, max: 100_000, count: 41 },
+                      { variable: "pre_subsidy_childcare_expenses", min: 0, max: 30_000, count: 21 },
+                      "human",
+                    ).catch(() => {});
+                  }}
+                >
+                  map earnings × childcare
+                </button>
+              )}
             </div>
           )}
         </div>
