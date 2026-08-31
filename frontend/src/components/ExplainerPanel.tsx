@@ -423,19 +423,21 @@ export function ExplainerPanel() {
 
   return (
     <aside className="tile explainer" ref={asideRef}>
-      <button
-        className="btn digest-clear"
-        title="Back to the list of cliffs on this map"
-        onClick={() => {
-          // Clear the whole selection chain — focus, cliff, AND the trace,
-          // which otherwise keeps this panel (and the dimmed map) open.
-          selectCliff(null, "human");
-          setFocusProgram(null);
-          setTrace(null);
-        }}
-      >
-        ← all cliffs
-      </button>
+      <div className="panel-top">
+        <button
+          className="btn digest-clear"
+          title="Back to the list of cliffs on this map"
+          onClick={() => {
+            // Clear the whole selection chain — focus, cliff, AND the trace,
+            // which otherwise keeps this panel (and the dimmed map) open.
+            selectCliff(null, "human");
+            setFocusProgram(null);
+            setTrace(null);
+          }}
+        >
+          ← all cliffs
+        </button>
+      </div>
       {selectedCliff && (
         <div className="cliff-block">
           <div className="eyebrow cliff-eyebrow">Selected cliff</div>

@@ -3,6 +3,7 @@ import { interpolate } from "./probes/analysis";
 import { usePeiraStore } from "./state/store";
 import type { SweepResult } from "./types";
 import { ConnectorLayer } from "./viz/ConnectorLayer";
+import { MapLegend } from "./viz/MapLegend";
 import { StackedSweepChart } from "./components/StackedSweepChart";
 import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
@@ -272,6 +273,7 @@ export default function App() {
                 </span>
                 <MapControls />
               </div>
+              {view.mode !== "heatmap" && view.mode !== "diff" && <MapLegend />}
               <div className="stage">
                 <CanvasArea />
                 <ProbeProgress />

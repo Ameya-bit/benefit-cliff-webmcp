@@ -440,6 +440,15 @@ header {
 }
 .legend-item { display: inline-flex; align-items: center; gap: 5px; }
 
+/* Docked at the top of the map card, clearing the chart's foot for the
+   connector beams that tie the map to the tiles below. */
+.map-legend {
+  flex: none;
+  padding: 0 2px 4px;
+  margin-top: -2px;
+  font-size: 11.5px;
+}
+
 .swatch {
   width: 9px;
   height: 9px;
@@ -611,6 +620,20 @@ header {
   min-width: 280px;
   overflow-y: auto;
   gap: 12px;
+}
+
+/* The tile scrolls; its header bar holds. The bar owns the tile's top
+   padding (the tile itself has none) so it sits flush at the scrollport
+   top and content slides underneath, not through. */
+.explainer { padding-top: 0; }
+.explainer .sec-head,
+.explainer .panel-top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface);
+  margin: 0 -22px;
+  padding: 14px 22px 8px;
 }
 
 /* Nothing selected: the ranked cliff digest — never an empty panel. */

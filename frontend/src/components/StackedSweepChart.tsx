@@ -477,20 +477,6 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         </div>
       )}
 
-      {/* legend */}
-      <div className="legend">
-        <span className="legend-item">
-          <span className="swatch" style={{ background: BASE_LAYER.color }} />
-          {BASE_LAYER.label}
-        </span>
-        {PROGRAM_LAYERS.map((layer) => (
-          <span key={layer.slug} className="legend-item">
-            <span className="swatch" style={{ background: layer.color }} />
-            {layer.label}
-          </span>
-        ))}
-      </div>
-
     </div>
   );
 }

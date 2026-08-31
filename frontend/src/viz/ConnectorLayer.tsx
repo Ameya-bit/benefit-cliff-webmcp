@@ -1,10 +1,13 @@
 /**
- * A beam that roots the explanation tile to the income it describes: when a
- * cliff is selected, a hairline spine drops from that cliff's spot on the
- * map's baseline to the tile's top edge. (The money-flow tile used to get a
- * cursor beam too — it crossed the legend on every scrub and read as noise,
- * so only the selection beam remains.) Pure overlay — measured from the
- * DOM, pointer-events: none, hidden on stacked (narrow) layouts by CSS.
+ * Beams that root the detail tiles to the incomes they describe. When a
+ * cliff is selected, a red spine drops from that cliff's spot on the map's
+ * baseline to the explainer's top edge. The money-flow tile gets a blue
+ * spine anchored at the income the flow is showing — the cursor while
+ * scrubbing/pinned, the household's own earnings at rest — so the blue
+ * hero number visibly IS a slice of the map. (An earlier cursor beam was
+ * removed for crossing the legend; the legend now lives above the chart,
+ * clearing the path.) Pure overlay — measured from the DOM,
+ * pointer-events: none, hidden on stacked (narrow) layouts by CSS.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -13,6 +16,8 @@ import { CHART_GEOM } from "../components/StackedSweepChart";
 import { CLIFF_COLOR } from "./palette";
 
 const CARD_INSET = 24; // spine may leave anywhere along the card's bottom, inset from the corners
+/** The scrub cursor's blue — same ink as the "you" line and the hero number. */
+const FLOW_COLOR = "#2563eb";
 
 interface Beam {
   key: string;
@@ -32,6 +37,10 @@ export function ConnectorLayer({
   const sweep = usePeiraStore((s) => s.sweep);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);
   const view = usePeiraStore((s) => s.view);
+  const currentIndex = usePeiraStore((s) => s.currentIndex);
+  const earnings = usePeiraStore((s) =>
+    s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
+  );
 
   const [beams, setBeams] = useState<Beam[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -81,6 +90,23 @@ export function ConnectorLayer({
     };
 
     const next: Beam[] = [];
+    // The money flow is always a slice of the map: its beam is anchored at
+    // the income the flow is showing (cursor if scrubbing/pinned, else the
+    // household's own earnings) and lands on the flow tile.
+    const flow = attach(".flow-tile");
+    if (flow && flow.cardY > rootY) {
+      const flowIncome =
+        currentIndex !== null && currentIndex < sweep.x.length
+          ? sweep.x[currentIndex]
+          : Math.max(xMin, Math.min(earnings, xMax));
+      next.push({
+        key: "flow",
+        rootX: xToPx(flowIncome),
+        rootY,
+        color: FLOW_COLOR,
+        ...flow,
+      });
+    }
     if (selectedCliff) {
       const exp = attach(".explainer");
       if (exp && exp.cardY > rootY) {
@@ -94,7 +120,7 @@ export function ConnectorLayer({
       }
     }
     setBeams(next);
-  }, [container, sweep, selectedCliff]);
+  }, [container, sweep, selectedCliff, currentIndex, earnings]);
 
   // Re-measure on every state change that moves a root, and when the layout
   // itself breathes (resize, cards growing/shrinking).
