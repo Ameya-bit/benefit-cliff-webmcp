@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
 import type { SweepResult } from "../types";
 import {
@@ -66,12 +66,11 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const PLOT_H = H - M.top - M.bottom;
   const [hoverPx, setHoverPx] = useState<number | null>(null);
   // A click on the plot pins the cursor: the money flow below keeps showing
-  // that income after the pointer leaves. Click again (near the pin) to release.
-  const [pinnedIdx, setPinnedIdx] = useState<number | null>(null);
-
-  useEffect(() => {
-    setPinnedIdx(null);
-  }, [sweep]);
+  // that income after the pointer leaves. Click again (near the pin) to
+  // release — or use the flow header's "back to your $X" chip. Lives in the
+  // store so the flow tile can release it too; canvas swaps clear it there.
+  const pinnedIdx = usePeiraStore((s) => s.pinnedIndex);
+  const setPinnedIdx = usePeiraStore((s) => s.setPinnedIndex);
 
   const target = useMemo(() => stackBoundaries(sweep), [sweep]);
   const rows = useAnimatedMatrix(target);

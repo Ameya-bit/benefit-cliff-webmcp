@@ -168,6 +168,19 @@ function FlowHead({
           )}
           {flowLabel && <em> · {flowLabel}</em>}
         </span>
+        {onCursor && (
+          <button
+            className="btn flow-release"
+            title="Stop following the line — show the flow at your own earnings"
+            onClick={() => {
+              const store = usePeiraStore.getState();
+              store.setPinnedIndex(null);
+              store.setCurrentIndex(null);
+            }}
+          >
+            ⨯ back to your {fmt(earnings)}
+          </button>
+        )}
       </div>
       {netAtCursor !== null && (
         <div className="hero-keep">

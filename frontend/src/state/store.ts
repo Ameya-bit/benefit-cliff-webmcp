@@ -43,6 +43,10 @@ interface PeiraState {
   view: CanvasView;
   /** Scrub position: index into the active sweep's x array. */
   currentIndex: number | null;
+  /** Cursor pinned by a click on the plot — the money flow keeps showing
+   * that income after the pointer leaves. Cleared when the canvas swaps. */
+  pinnedIndex: number | null;
+  setPinnedIndex: (index: number | null) => void;
   /** Cliff selected for interrogation (by its from_x), shared human<->agent. */
   selectedCliff: Cliff | null;
   /** Cliff income being hovered in the digest list — the map highlights it. */
@@ -122,6 +126,8 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   baselineSweep: null,
   view: { mode: "sweep" },
   currentIndex: null,
+  pinnedIndex: null,
+  setPinnedIndex: (pinnedIndex) => set({ pinnedIndex }),
   selectedCliff: null,
   hoverCliffX: null,
   setHoverCliffX: (hoverCliffX) => set({ hoverCliffX }),
@@ -140,6 +146,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
       view: { mode: "sweep" },
       selectedCliff: null,
       trace: null,
+      pinnedIndex: null,
     }),
   showAblation: (ablatedSweep, baseline, program, interactions) =>
     set({
@@ -148,6 +155,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
       view: { mode: "ablate", program, interactions },
       selectedCliff: null,
       trace: null,
+      pinnedIndex: null,
     }),
   showReform: (reformedSweep, baseline, label) =>
     set({
@@ -156,6 +164,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
       view: { mode: "reform", label },
       selectedCliff: null,
       trace: null,
+      pinnedIndex: null,
     }),
   restoreBaseline: () =>
     set((state) =>
@@ -164,6 +173,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
             sweep: state.baselineSweep,
             baselineSweep: null,
             view: { mode: "sweep" },
+            pinnedIndex: null,
           }
         : {},
     ),
@@ -175,6 +185,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
       selectedCliff: null,
       trace: null,
       currentIndex: null,
+      pinnedIndex: null,
       focusProgram: null,
       activeGalleryId: null,
     }),
@@ -213,22 +224,47 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
   gallery: [],
   activeGalleryId: null,
   pushGalleryFromCurrent: (kind, title, source) => {
-    const id = ++probeId;
-    set((state) => ({
-      gallery: [
-        ...state.gallery,
-        {
-          id,
-          kind,
-          title,
-          source,
-          sweep: state.sweep,
-          baselineSweep: state.baselineSweep,
-          view: state.view,
-        },
-      ].slice(-MAX_GALLERY),
-      activeGalleryId: id,
-    }));
+    set((state) => {
+      // Re-running the same probe reactivates its snapshot instead of
+      // filing a twin — the rail is a notebook, not a raw event log.
+      const signature = (k: string, t: string, s: SweepResult | null) =>
+        `${k}|${t}|${
+          s
+            ? `${s.axis.min}-${s.axis.max}|${Math.round(
+                s.net_income.reduce((a, b) => a + b, 0),
+              )}`
+            : "none"
+        }`;
+      const sig = signature(kind, title, state.sweep);
+      const existing = state.gallery.find(
+        (e) => signature(e.kind, e.title, e.sweep) === sig,
+      );
+      if (existing) {
+        return {
+          gallery: [
+            ...state.gallery.filter((e) => e.id !== existing.id),
+            existing,
+          ],
+          activeGalleryId: existing.id,
+        };
+      }
+      const id = ++probeId;
+      return {
+        gallery: [
+          ...state.gallery,
+          {
+            id,
+            kind,
+            title,
+            source,
+            sweep: state.sweep,
+            baselineSweep: state.baselineSweep,
+            view: state.view,
+          },
+        ].slice(-MAX_GALLERY),
+        activeGalleryId: id,
+      };
+    });
   },
   restoreGallery: (id) =>
     set((state) => {
@@ -240,6 +276,7 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
         view: entry.view,
         selectedCliff: null,
         trace: null,
+        pinnedIndex: null,
         activeGalleryId: id,
       };
     }),

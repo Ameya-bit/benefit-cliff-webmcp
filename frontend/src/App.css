@@ -397,7 +397,8 @@ header {
 
 .chart-tooltip {
   position: absolute;
-  top: 46px;
+  /* below the cliff-pill band, so pills stay readable while hovering */
+  top: 112px;
   transform: translateX(12px);
   background: var(--surface);
   border: 1px solid var(--border-2);
@@ -498,6 +499,13 @@ header {
 
 .flow-tile { flex: 1.25 1 0; }
 .flow-tile .sec-head { padding-right: 30px; }
+.sec-head .flow-release {
+  margin-left: auto;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  color: var(--accent);
+}
+.flow-modal .sec-head { padding-right: 36px; }
 
 .expand-btn {
   position: absolute;
