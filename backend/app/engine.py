@@ -1,14 +1,21 @@
-"""Warm policyengine-us engine with cached reformed tax-benefit systems.
+"""Warm policyengine-us engine with a single cached tax-benefit system.
 
-Building a reformed CountryTaxBenefitSystem costs ~5s; constructing a
-Simulation from a prebuilt system costs ~0.07s (verified Aug 2026). So systems
-are cached by reform hash and every request reuses one. The health-benefits
-switch is part of the permanent baseline: without it, Medicaid/CHIP/ACA value
-is excluded from net income and those cliffs are invisible.
+Building a (reformed) CountryTaxBenefitSystem costs ~5s, but each one holds
+~1.2GB resident (measured Aug 2026) — caching several OOM-killed the 2GB
+production instance (exit 137). So exactly ONE system lives in memory at a
+time: switching reform/ablation evicts the old system and rebuilds (~5s),
+and every public run_* entry point serializes on _ENGINE_LOCK so an
+in-flight computation's system can't be evicted under it. The
+health-benefits switch is part of the permanent baseline: without it,
+Medicaid/CHIP/ACA value is excluded from net income and those cliffs are
+invisible.
 """
 
+import ctypes
+import gc
 import json
-from functools import lru_cache
+import threading
+from functools import wraps
 
 import numpy as np
 from policyengine_core.reforms import Reform
@@ -27,11 +34,51 @@ BASELINE_REFORM = {
 }
 
 
-@lru_cache(maxsize=16)
+_ENGINE_LOCK = threading.RLock()
+_system_key: tuple[str, str] | None = None
+_system: CountryTaxBenefitSystem | None = None
+
+
+def _serialized(fn):
+    """Run the whole engine call under the lock: computations never overlap,
+    so the single cached system can't be evicted while a request uses it."""
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _ENGINE_LOCK:
+            return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def _release_memory() -> None:
+    gc.collect()
+    try:
+        # glibc only: hand freed arenas back to the OS so the container's
+        # cgroup accounting sees them (no-op failure on macOS).
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except OSError:
+        pass
+
+
+def _swap_system(key: tuple[str, str], build) -> CountryTaxBenefitSystem:
+    global _system_key, _system
+    if _system_key == key and _system is not None:
+        return _system
+    _system, _system_key = None, None
+    _release_memory()
+    _system = build()
+    _system_key = key
+    return _system
+
+
 def _get_system(reform_key: str) -> CountryTaxBenefitSystem:
-    overrides = json.loads(reform_key)
-    reform = Reform.from_dict({**BASELINE_REFORM, **overrides}, country_id="us")
-    return CountryTaxBenefitSystem(reform=reform)
+    def build() -> CountryTaxBenefitSystem:
+        overrides = json.loads(reform_key)
+        reform = Reform.from_dict({**BASELINE_REFORM, **overrides}, country_id="us")
+        return CountryTaxBenefitSystem(reform=reform)
+
+    return _swap_system(("reform", reform_key), build)
 
 
 def make_simulation(situation: dict, reform_overrides: dict | None = None) -> Simulation:
@@ -44,6 +91,7 @@ def warm_up() -> None:
     _get_system(json.dumps({}))
 
 
+@_serialized
 def run_sweep(
     household: Household,
     axis: SweepAxis,
@@ -82,6 +130,7 @@ def _decompose(sim) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return net_income, programs
 
 
+@_serialized
 def run_calculate(household: Household, reform_overrides: dict | None = None) -> dict:
     """Single household calculation with per-program decomposition."""
     sim = make_simulation(build_situation(household), reform_overrides)
@@ -92,6 +141,7 @@ def run_calculate(household: Household, reform_overrides: dict | None = None) ->
     }
 
 
+@_serialized
 def run_diff(household_a: Household, household_b: Household, axis: SweepAxis) -> dict:
     """Counterfactual comparison: the same sweep over two household scenarios."""
     sweep_a = run_sweep(household_a, axis)
@@ -102,15 +152,18 @@ def run_diff(household_a: Household, household_b: Household, axis: SweepAxis) ->
     return {"a": sweep_a, "b": sweep_b, "net_income_delta": delta}
 
 
-@lru_cache(maxsize=10)
 def _get_ablated_system(program: str) -> CountryTaxBenefitSystem:
-    reform = Reform.from_dict(BASELINE_REFORM, country_id="us")
-    system = CountryTaxBenefitSystem(reform=reform)
-    for variable in ABLATION_VARIABLES[program]:
-        system.neutralize_variable(variable)
-    return system
+    def build() -> CountryTaxBenefitSystem:
+        reform = Reform.from_dict(BASELINE_REFORM, country_id="us")
+        system = CountryTaxBenefitSystem(reform=reform)
+        for variable in ABLATION_VARIABLES[program]:
+            system.neutralize_variable(variable)
+        return system
+
+    return _swap_system(("ablate", program), build)
 
 
+@_serialized
 def run_ablation(household: Household, axis: SweepAxis, program: str) -> dict:
     """Knock a program out of the mechanism and re-run the sweep.
 
@@ -188,6 +241,7 @@ def _trace_gates(sim: Simulation, household: Household, program: str) -> list[di
     return flips
 
 
+@_serialized
 def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
     """Attribute the local mechanism behavior at one point, down to the rule.
 
@@ -235,6 +289,7 @@ def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
     }
 
 
+@_serialized
 def run_sweep_2d(
     household: Household, axis_x: SweepAxis, axis_y: SweepAxis, y_person_index: int
 ) -> dict:
@@ -275,6 +330,7 @@ def run_sweep_2d(
     }
 
 
+@_serialized
 def run_minimal_fix(household: Household, axis: SweepAxis, cliff_at: float) -> dict:
     """Search policy-space for the smallest whitelisted edit that removes a cliff.
 
