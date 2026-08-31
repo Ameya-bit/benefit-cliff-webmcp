@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; }
+    a { color: #5c5850; } a:hover { color: #141210; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; background: #f7f5f0; color: #141210; padding: 18px 34px 14px; display: flex; flex-direction: column; font-size: 15px; line-height: 1.5;">
+
+  <!-- masthead: no card chrome, a classic double rule -->
+  <div style="display: flex; align-items: baseline; gap: 18px; padding-bottom: 10px;">
+    <div style="display: flex; align-items: baseline; gap: 12px; white-space: nowrap;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 30px; letter-spacing: -0.015em;">Peira</span>
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 16px; color: #5c5850;">see what a raise really does</span>
+    </div>
+    <div style="flex: 1; display: flex; justify-content: flex-end;">
+      <span style="font-size: 13.5px; color: #5c5850;">
+        <b style="color: #141210; font-weight: 500;">2 adults · 2 kids (3 &amp; 7)</b>
+        <span style="color: #d9d6cf;"> · </span>Denver County
+        <span style="color: #d9d6cf;"> · </span><b style="color: #141210; font-weight: 500;">$32,000/yr</b>
+        <span style="color: #6c675e; font-size: 12px; text-decoration: underline; text-underline-offset: 3px;"> edit</span>
+      </span>
+    </div>
+  </div>
+  <div style="border-top: 2px solid #141210; border-bottom: 1px solid #141210; height: 3px; margin-bottom: 14px;"></div>
+
+  <!-- map zone: chart sits directly on the paper -->
+  <div style="display: flex; align-items: baseline; gap: 12px; padding-bottom: 6px;">
+    <span style="font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;">What you keep at every income</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: #5c5850;">
+      <span style="font-weight: 600; color: #141210; border-bottom: 2px solid #141210; padding-bottom: 1px;">income map</span>
+      <span>earnings × childcare</span>
+      <span style="border: 1px solid #d9d6cf; border-radius: 4px; padding: 3px 10px;">what if…</span>
+      <span style="border: 1px solid #d9d6cf; border-radius: 4px; padding: 3px 10px;">$0 – $100k</span>
+    </div>
+  </div>
+  <svg viewBox="0 0 1240 430" style="width: 100%; height: 420px; display: block;">
+    <!--INC:parts/chart-ink.svg-->
+    <g>
+      <line x1="430.4" y1="36" x2="430.4" y2="400" stroke="#2563eb" stroke-width="1.6" opacity="0.9"/>
+      <circle cx="430.4" cy="166.5" r="5.5" fill="#2563eb" stroke="#f7f5f0" stroke-width="2"/>
+      <text x="430.4" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#2563eb" stroke="#f7f5f0" stroke-width="3.5" paint-order="stroke">you — $32k</text>
+    </g>
+    <g>
+      <line x1="652.7" y1="106" x2="652.7" y2="131.4" stroke="#cc3b3b" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+      <circle cx="652.7" cy="131.4" r="4" fill="#cc3b3b"/>
+      <rect x="616.7" y="85.5" width="72" height="21" rx="10.5" fill="#cc3b3b"/>
+      <text x="652.7" y="100" text-anchor="middle" font-size="12.5" font-weight="600" fill="#f7f5f0">▼ $15k</text>
+    </g>
+    <g>
+      <line x1="500.6" y1="140" x2="500.6" y2="153.4" stroke="#cc3b3b" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+      <circle cx="500.6" cy="153.4" r="4" fill="#cc3b3b"/>
+      <rect x="464.6" y="119.5" width="72" height="21" rx="10.5" fill="rgba(204,59,59,0.06)" stroke="#cc3b3b" stroke-width="0.8"/>
+      <text x="500.6" y="134" text-anchor="middle" font-size="12.5" font-weight="600" fill="#cc3b3b">▼ $4.1k</text>
+    </g>
+    <g>
+      <line x1="828.2" y1="138" x2="828.2" y2="151" stroke="#cc3b3b" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+      <circle cx="828.2" cy="151" r="4" fill="#cc3b3b"/>
+      <rect x="792.2" y="117.5" width="72" height="21" rx="10.5" fill="rgba(204,59,59,0.06)" stroke="#cc3b3b" stroke-width="0.8"/>
+      <text x="828.2" y="132" text-anchor="middle" font-size="12.5" font-weight="600" fill="#cc3b3b">▼ $2.8k</text>
+    </g>
+  </svg>
+  <div style="display: flex; flex-wrap: wrap; gap: 2px 14px; padding: 6px 2px 12px; font-size: 12px; color: #5c5850; border-bottom: 1px solid #e3e0d8;">
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #c3c2b7;"></span>Pay after taxes</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #2a78d6;"></span>Medicaid</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #eb6834;"></span>Kids’ health (CHIP)</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #1baf7a;"></span>Insurance credit (ACA)</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #eda100;"></span>Food aid (SNAP)</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #e87ba4;"></span>Cash aid (TANF)</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #008300;"></span>Childcare help (CCCAP)</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #4a3aa7;"></span>Earned-income credit</span>
+    <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2.5px; background: #e34948;"></span>Child tax credit</span>
+  </div>
+
+  <!-- column row: hairline-ruled, no boxes -->
+  <div style="flex: 1; min-height: 0; display: flex; align-items: stretch; padding-top: 12px;">
+    <div style="flex: 1.25; padding-right: 20px; display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;">Where the money comes from</span>
+        <span style="font-size: 13px; color: #5c5850;">at this household’s earnings — <b style="font-weight: 600;">$32,000</b></span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 10px; padding: 2px 0 0;">
+        <span style="font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 36px; letter-spacing: -0.01em; line-height: 1.1;">$62,830</span>
+        <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 14px; color: #5c5850;">what your family keeps</span>
+      </div>
+      <svg viewBox="0 0 560 235" style="flex: 1; min-height: 0; width: 100%; display: block;">
+        <!--INC:parts/flow-compact-ink.svg-->
+      </svg>
+    </div>
+    <div style="width: 1px; background: #e3e0d8;"></div>
+    <div style="flex: 1; padding: 0 20px; display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;">The cliffs, ranked</span>
+      <p style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 17px; color: #5c5850; line-height: 1.5;">Three raises on this map cost more than they pay.</p>
+      <div style="display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: baseline; gap: 8px; padding: 8px 2px; font-size: 13px; color: #5c5850; border-top: 1px solid #e3e0d8;">
+          <span style="color: #cc3b3b; font-weight: 600; white-space: nowrap;">−$15,210</span>
+          <span>crossing $51,000</span>
+          <span style="margin-left: auto; font-size: 12px; color: #6c675e;">Childcare help (CCCAP)</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; padding: 8px 2px; font-size: 13px; color: #5c5850; border-top: 1px solid #e3e0d8;">
+          <span style="color: #cc3b3b; font-weight: 600; white-space: nowrap;">−$4,100</span>
+          <span>crossing $38,000</span>
+          <span style="margin-left: auto; font-size: 12px; color: #6c675e;">Medicaid</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; padding: 8px 2px; font-size: 13px; color: #5c5850; border-top: 1px solid #e3e0d8; border-bottom: 1px solid #e3e0d8;">
+          <span style="color: #cc3b3b; font-weight: 600; white-space: nowrap;">−$2,800</span>
+          <span>crossing $66,000</span>
+          <span style="margin-left: auto; font-size: 12px; color: #6c675e;">Kids’ health (CHIP)</span>
+        </div>
+      </div>
+      <p style="margin: 2px 0 0; font-size: 12.5px; color: #6c675e; line-height: 1.55;">Click a cliff to see the rule that causes it — and what a fix would cost.</p>
+    </div>
+    <div style="width: 1px; background: #e3e0d8;"></div>
+    <div style="flex: 0.75; padding-left: 20px; display: flex; flex-direction: column;">
+      <span style="font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;">Explored so far</span>
+      <div style="display: flex; align-items: center; gap: 7px; padding: 6px 0 8px; font-size: 12.5px; color: #5c5850; border-bottom: 1px solid #e3e0d8; margin-bottom: 6px;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0;"></span>
+        <span style="font-weight: 600; color: #6d5bd0;">agent</span>
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">swept $0–$100k · just now</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 9px; padding: 4px 2px;">
+          <svg viewBox="0 0 58 32" style="width: 58px; background: #efede6;"><path d="M2,28 L18,20 L26,14 L30,24 L44,18 L56,12" fill="none" stroke="#141210" stroke-width="1.6"/></svg>
+          <span style="font-size: 12px; font-weight: 500;">Today’s household</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 9px; padding: 4px 2px;">
+          <svg viewBox="0 0 58 32" style="width: 58px; background: #efede6;"><path d="M2,27 L20,18 L28,12 L32,22 L46,16 L56,10" fill="none" stroke="#6c675e" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+          <span style="font-size: 12px; color: #5c5850;">What if: a $2/hr raise</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 9px; padding: 4px 2px;">
+          <svg viewBox="0 0 58 32" style="width: 58px; background: #efede6;"><path d="M2,29 L20,24 L30,20 L34,26 L48,21 L56,17" fill="none" stroke="#6c675e" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+          <span style="font-size: 12px; color: #5c5850;">Without childcare help</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin: 0; font-size: 12px; color: #6c675e; text-align: right; font-family: 'Newsreader', Georgia, serif; font-style: italic;">Figured with PolicyEngine’s model of Colorado’s 2026 rules — estimates to think with, not benefits advice.</p>
+</div>
+</x-dc>
+</body>
+</html>

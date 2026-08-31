@@ -124,7 +124,7 @@ export function MoneyFlow({
       active.push({ slug, label, color, value, h, yL: y, hR: 0, yR: 0 });
       y += h + GAP;
     };
-    push("job", "The job", C.inkPrimary, at);
+    push("job", "Your job", C.inkPrimary, at);
     for (const p of activePrograms) push(p.slug, p.label, p.color, p.value);
 
     // right-side stack: the job arrives net of taxes
@@ -313,7 +313,7 @@ export function MoneyFlow({
             width={Math.min(gateRule.rule.length, 46) * 5.4 + 18}
             height={18}
             rx={9}
-            fill="#ffffff"
+            fill="#f5f1e8"
             stroke={gateStream.color}
             strokeWidth={1.4}
             style={{ filter: `drop-shadow(0 0 5px ${gateStream.color}88)` }}

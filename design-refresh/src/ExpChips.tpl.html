@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; }
+    a { color: #6b6459; } a:hover { color: #201c15; }
+  </style>
+</helmet>
+<div style="width: 1380px; height: 680px; box-sizing: border-box; background: #e8e2d4; color: #201c15; padding: 20px 26px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 1.5;">
+
+  <div style="background: #f5f1e8; border-radius: 22px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 14px 22px 12px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0d7c3;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 15px; color: #6b6459;">what you keep at every income</span>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">What if… ▾</span>
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">zoom</span>
+      </div>
+    </div>
+    <!-- the chip strip: a second head row holding the history as quiet tabs -->
+    <div style="display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid #e0d7c3; margin-bottom: 10px;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 13.5px; color: #665f4f; white-space: nowrap;">explored ·</span>
+      <span style="display: inline-flex; align-items: center; gap: 6px; background: #efe9db; border-radius: 999px; padding: 4px 12px; font-size: 12.5px; font-weight: 500; box-shadow: 0 0 0 1.5px #201c15;">
+        <span style="width: 7px; height: 7px; border-radius: 2px; background: #047857;"></span>
+        Income map $0–$100k
+      </span>
+      <span style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-size: 12.5px; color: #6b6459; background: #f5f1e8; box-shadow: inset 0 0 0 1px #e0d7c3;">
+        <span style="width: 7px; height: 7px; border-radius: 2px; background: #047857;"></span>
+        What if: no childcare assistance
+      </span>
+      <span style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-size: 12.5px; color: #6b6459; background: #f5f1e8; box-shadow: inset 0 0 0 1px #e0d7c3;">
+        <span style="width: 7px; height: 7px; border-radius: 2px; background: #6d5bd0;"></span>
+        Without Medicaid
+      </span>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #6b6459; white-space: nowrap;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0;"></span>
+        <span style="font-weight: 600; color: #6d5bd0;">agent</span>
+        <span>swept $0–$100k · just now</span>
+      </div>
+    </div>
+    <svg viewBox="0 0 1240 430" style="width: 100%; height: 430px; display: block;">
+      <!--INC:parts/chart-sand.svg-->
+      <g>
+        <line x1="652.7" y1="36" x2="652.7" y2="400" stroke="#2563eb" stroke-width="1.6" opacity="0.9"/>
+        <circle cx="652.7" cy="131.4" r="5.5" fill="#2563eb" stroke="#f5f1e8" stroke-width="2"/>
+        <text x="652.7" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#2563eb" stroke="#f5f1e8" stroke-width="3.5" paint-order="stroke">you — $50k</text>
+      </g>
+      <g>
+        <line x1="500.6" y1="140" x2="500.6" y2="153.4" stroke="#c23434" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+        <circle cx="500.6" cy="153.4" r="4" fill="#c23434"/>
+        <rect x="464.6" y="119.5" width="72" height="21" rx="10.5" fill="#c23434"/>
+        <text x="500.6" y="134" text-anchor="middle" font-size="12.5" font-weight="600" fill="#f5f1e8">▼ $8k</text>
+      </g>
+    </svg>
+  </div>
+
+  <div style="display: flex; gap: 24px; font-size: 12.5px; color: #6b6459; padding: 0 4px;">
+    <span><b style="font-weight: 600; color: #201c15;">Head chips — your top strip, done as quietly as we can:</b> a second head row inside the map card, ticker at its right end.</span>
+    <span><b style="font-weight: 600; color: #201c15;">Wins:</b> frees the whole right column; history sits beside what it changes.</span>
+    <span style="margin-left: auto;"><b style="font-weight: 600; color: #201c15;">Tradeoff:</b> two stacked head rows before any data — the map loses its quiet opening.</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

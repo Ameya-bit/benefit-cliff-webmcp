@@ -1,0 +1,32 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Look and feel" },
+    { "id": "page-2", "name": "Explored rail" }
+  ],
+  "artboards": [
+    { "file": "ExpFilmstrip.dc.html", "title": "1 — Filmstrip dock", "x": 0, "y": 0, "w": 1380, "h": 700, "page": "page-2" },
+    { "file": "ExpMiniRail.dc.html", "title": "2 — Vertical mini-rail", "x": 1500, "y": 0, "w": 1440, "h": 900, "page": "page-2" },
+    { "file": "ExpChips.dc.html", "title": "3 — Head chips", "x": 0, "y": 1030, "w": 1380, "h": 680, "page": "page-2" },
+    { "file": "ExpPopover.dc.html", "title": "4 — History popover", "x": 1500, "y": 1030, "w": 1380, "h": 680, "page": "page-2" },
+    { "file": "Main.dc.html", "title": "A — Warm editorial", "x": 0, "y": 0, "w": 1440, "h": 900 },
+    { "file": "StoneField.dc.html", "title": "B — Stone & sand", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "InkPaper.dc.html", "title": "C — Ink & paper", "x": 3120, "y": 0, "w": 1440, "h": 900 },
+    { "file": "ChartDrawIn.dc.html", "title": "Motion — the map draws on", "x": 0, "y": 1060, "w": 1300, "h": 640 },
+    { "file": "CliffQuiet.dc.html", "title": "Cliffs A — pills only", "x": 1420, "y": 1060, "w": 1300, "h": 620 },
+    { "file": "CliffBand.dc.html", "title": "Cliffs B — shaded drop span", "x": 2840, "y": 1060, "w": 1300, "h": 620 },
+    { "file": "ModalSand.dc.html", "title": "Sheet — sand squircle", "x": 0, "y": 1860, "w": 780, "h": 660 },
+    { "file": "ModalInk.dc.html", "title": "Sheet — paper & serif", "x": 880, "y": 1860, "w": 780, "h": 660 },
+    { "file": "TypeVoice.dc.html", "title": "Type & voice", "x": 1780, "y": 1860, "w": 920, "h": 980 },
+    { "file": "Tokens.dc.html", "title": "Grounds & tokens", "x": 2820, "y": 1860, "w": 1060, "h": 820 }
+  ],
+  "annotations": [
+    { "id": "explored-intro", "x": -480, "y": 0, "w": 400, "page": "page-2", "text": "Round three: where does \"what you've explored\" live?\n\nYou're right that it's browser tabs — the question is which edge. Four shapes, each drawn in the app's current stone-and-sand voice, spec strip at the bottom of each with the honest tradeoff.\n\nMy vote: 1, the filmstrip dock — nothing hides, the ticker keeps its stage, and both reading tiles get wider. 2 scales best past ~8 entries. 3 is your top strip, done as quietly as I could. 4 is cheapest and weakest for the demo." },
+    { "id": "intro", "x": -500, "y": 0, "w": 420, "text": "Peira — look & feel, round two.\n\nTop row: three full-page directions — pick one.\nMiddle: the draw-on motion, and the cliff A/B you were unsure about.\nBottom: two modal treatments, the type/voice system, and the token sheet.\n\nThe 8 program colors never change between directions (they are CVD-validated); only the ground, type, and chrome move." },
+    { "id": "note-warm", "x": 0, "y": -175, "w": 400, "text": "A — Warm editorial (recommended).\nSmallest diff from the shipping app: same layout, same components; cool grey turns to warm paper and Newsreader takes the headings and asides.\nTradeoff: the least adventurous of the three." },
+    { "id": "note-sand", "x": 1560, "y": -175, "w": 400, "text": "B — Stone & sand.\nYour squircle + sand instinct taken all the way: borders gone, depth from soft warm shadows, serif-italic section labels.\nTradeoff: italic labels scan slower than caps; needs discipline not to feel pillowy." },
+    { "id": "note-ink", "x": 3120, "y": -175, "w": 400, "text": "C — Ink & paper.\nThe editorial voice as structure: a broadsheet with hairline rules instead of cards. Most distinctive of the three.\nTradeoff: biggest CSS diff, and without card boundaries the three lower zones lean entirely on the hairlines." },
+    { "id": "note-cliffs", "x": 4260, "y": 1060, "w": 320, "text": "The band, kept honest: only as wide as the actual drop (~$1k of earnings), drawn under the data — not the broad wash you were picturing.\nCompare against A and veto freely; the pills stand on their own." },
+    { "id": "note-sheets", "x": 0, "y": 2560, "w": 520, "text": "The sand sheet replays its entrance every 5s so you can judge the 240ms scale/fade + backdrop blur you asked about. The paper sheet is the no-motion, no-blur alternative with hierarchy carried by type alone. Either works inside any of the three directions." }
+  ],
+  "launch": { "view": "canvas", "page": "page-2" }
+}

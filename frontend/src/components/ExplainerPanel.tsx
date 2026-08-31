@@ -33,6 +33,9 @@ function CliffDigest() {
   const setCurrentIndex = usePeiraStore((s) => s.setCurrentIndex);
   const setHoverCliffX = usePeiraStore((s) => s.setHoverCliffX);
   const webmcpAvailable = usePeiraStore((s) => s.webmcpAvailable);
+  const earnings = usePeiraStore((s) =>
+    s.household.adults.reduce((a, ad) => a + ad.employment_income, 0),
+  );
 
   // The map's hover highlight must not outlive the list (e.g. a row was
   // hovered when clicking swapped this panel to the explanation).
@@ -44,13 +47,18 @@ function CliffDigest() {
   return (
     <>
       <div className="sec-head">
-        <span className="eyebrow cliff-eyebrow">Raises that backfire</span>
+        <span className="eyebrow cliff-eyebrow">Where a raise would cost you</span>
         <span className="at">
           {cliffs.length > 0
             ? `${cliffs.length} on this map, biggest first`
             : "none on this map"}
         </span>
       </div>
+      <p className="digest-hint">
+        Click any cliff — here, or up on the map — and it opens up: which
+        program causes it, what that program pays you today, and the exact
+        rule that takes it away.
+      </p>
       {cliffs.length > 0 ? (
         <div className="cliff-digest">
           {cliffs.map((cliff) => (
@@ -70,22 +78,20 @@ function CliffDigest() {
               }}
             >
               <span className="digest-drop">▼ {fmtK(Math.abs(cliff.net_drop))}</span>
-              <span className="digest-at">at {fmtK(cliff.from_x)}</span>
+              <span className="digest-at">
+                {cliff.from_x < earnings ? "dropping to" : "rising to"}{" "}
+                {fmtK(cliff.from_x)}
+              </span>
               <span className="digest-prog">{programLabel(cliff.dominant_program)}</span>
             </button>
           ))}
         </div>
       ) : (
         <p className="digest-hint">
-          No spot on this map where a raise costs your family money — every
-          extra dollar earned keeps at least part of itself.
+          Nowhere on this map does a raise cost you money — every extra
+          dollar you earn keeps at least part of itself.
         </p>
       )}
-      <p className="digest-hint">
-        Click a cliff here or on the map — or a money stream on the flow — and
-        it gets explained in plain language: what the program is, what it pays
-        your family, and the exact rule behind it.
-      </p>
       {webmcpAvailable === false && (
         <p className="agent-hint">
           No agent is attached. Open this page in ChatGPT’s browser to explore
@@ -353,6 +359,7 @@ export function ExplainerPanel() {
   const sweep = usePeiraStore((s) => s.sweep);
   const household = usePeiraStore((s) => s.household);
   const trace = usePeiraStore((s) => s.trace);
+  const setTrace = usePeiraStore((s) => s.setTrace);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);
   const selectCliff = usePeiraStore((s) => s.selectCliff);
   const view = usePeiraStore((s) => s.view);
@@ -420,8 +427,11 @@ export function ExplainerPanel() {
         className="btn digest-clear"
         title="Back to the list of cliffs on this map"
         onClick={() => {
+          // Clear the whole selection chain — focus, cliff, AND the trace,
+          // which otherwise keeps this panel (and the dimmed map) open.
           selectCliff(null, "human");
           setFocusProgram(null);
+          setTrace(null);
         }}
       >
         ← all cliffs
@@ -430,14 +440,28 @@ export function ExplainerPanel() {
         <div className="cliff-block">
           <div className="eyebrow cliff-eyebrow">Selected cliff</div>
           <p className="cliff-headline">
-            Crossing <b>{fmt(selectedCliff.from_x)}</b> costs this family{" "}
-            <b className="neg">{fmt(Math.abs(selectedCliff.net_drop))}</b>{" "}
-            <span className="serif-it">in one step</span>.
+            {selectedCliff.from_x < earnings ? (
+              <>
+                This one is behind you — dropping under{" "}
+                <b>{fmt(selectedCliff.from_x)}</b> would hand your family{" "}
+                <b className="pos">{fmt(Math.abs(selectedCliff.net_drop))}</b>{" "}
+                <span className="serif-it">back</span>.
+              </>
+            ) : (
+              <>
+                Rising past <b>{fmt(selectedCliff.from_x)}</b> costs your
+                family{" "}
+                <b className="neg">{fmt(Math.abs(selectedCliff.net_drop))}</b>{" "}
+                <span className="serif-it">in one step</span>.
+              </>
+            )}
             {(() => {
               const recovery = sweep
                 ? cliffRecovery(sweep.x, sweep.net_income, selectedCliff)
                 : null;
-              return recovery ? <> Not fully recovered until {fmt(recovery)}.</> : null;
+              return recovery ? (
+                <> Climbing, you’re not fully made whole until {fmt(recovery)}.</>
+              ) : null;
             })()}
           </p>
           <div className="delta-list">
@@ -546,7 +570,7 @@ export function ExplainerPanel() {
       )}
 
       <p className="fine-print">
-        Model estimates from policyengine-us — not benefits advice.
+        Estimates from PolicyEngine&rsquo;s model — not benefits advice.
       </p>
     </aside>
   );

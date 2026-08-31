@@ -44,30 +44,33 @@ export interface DiffPreset {
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
 
+/* Menu labels speak to the user ("you married…"); runLabels are noun
+ * phrases because they land mid-sentence — "life with {label}",
+ * "{label} means +$2,000 a year". */
 export const DIFF_PRESETS: DiffPreset[] = [
   {
-    label: "+ partner",
+    label: "you married",
     isAvailable: (h) => h.adults.length < 2,
     param: { label: "partner earns $/yr", defaultValue: 0, min: 0, max: 200_000, step: 1000 },
     variant: (h, value) => ({
       adults: [...h.adults, { age: 30, employment_income: value, weekly_work_hours: 40 }],
     }),
     runLabel: (value) =>
-      value > 0 ? `+ partner earning ${fmtK(value)}` : "+ partner (no income)",
+      value > 0 ? `a partner earning ${fmtK(value)}` : "a partner (no income)",
   },
   {
-    label: "kids older",
+    label: "the kids got older",
     isAvailable: (h) => h.children.length > 0,
     param: { label: "years older", defaultValue: 3, min: 1, max: 10, step: 1 },
     variant: (h, value) => ({
       children: h.children.map((c) => ({ ...c, age: Math.min(c.age + value, 17) })),
     }),
-    runLabel: (value) => `kids ${value}yr${value === 1 ? "" : "s"} older`,
+    runLabel: (value) => `the kids ${value} year${value === 1 ? "" : "s"} older`,
   },
   {
-    label: "off childcare assistance",
+    label: "you lost childcare assistance",
     isAvailable: (h) => h.receiving_childcare_subsidy,
     variant: () => ({ receiving_childcare_subsidy: false }),
-    runLabel: () => "off childcare assistance",
+    runLabel: () => "no childcare assistance",
   },
 ];

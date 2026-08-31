@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; }
+    a { color: #6b6459; } a:hover { color: #201c15; }
+  </style>
+</helmet>
+<div style="width: 1380px; height: 680px; box-sizing: border-box; background: #e8e2d4; color: #201c15; padding: 20px 26px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 1.5;">
+
+  <div style="background: #f5f1e8; border-radius: 22px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 14px 22px 12px; display: flex; flex-direction: column; position: relative;">
+    <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0d7c3; margin-bottom: 10px;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 15px; color: #6b6459;">what you keep at every income</span>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+        <!-- the history collapses to one chip; the pulse dot is the live ticker -->
+        <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: #201c15; background: #efe9db; border-radius: 999px; padding: 5px 13px; box-shadow: 0 0 0 1.5px #201c15;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0;"></span>
+          explored · 3 ▾
+        </span>
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">What if… ▾</span>
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">zoom</span>
+      </div>
+    </div>
+    <svg viewBox="0 0 1240 430" style="width: 100%; height: 430px; display: block;">
+      <!--INC:parts/chart-sand.svg-->
+      <g>
+        <line x1="652.7" y1="36" x2="652.7" y2="400" stroke="#2563eb" stroke-width="1.6" opacity="0.9"/>
+        <circle cx="652.7" cy="131.4" r="5.5" fill="#2563eb" stroke="#f5f1e8" stroke-width="2"/>
+        <text x="652.7" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#2563eb" stroke="#f5f1e8" stroke-width="3.5" paint-order="stroke">you — $50k</text>
+      </g>
+      <g>
+        <line x1="500.6" y1="140" x2="500.6" y2="153.4" stroke="#c23434" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+        <circle cx="500.6" cy="153.4" r="4" fill="#c23434"/>
+        <rect x="464.6" y="119.5" width="72" height="21" rx="10.5" fill="#c23434"/>
+        <text x="500.6" y="134" text-anchor="middle" font-size="12.5" font-weight="600" fill="#f5f1e8">▼ $8k</text>
+      </g>
+    </svg>
+    <!-- the open popover, anchored under the chip -->
+    <div style="position: absolute; top: 52px; right: 210px; width: 330px; background: #f5f1e8; border-radius: 16px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.08), 0 14px 36px rgba(32, 28, 21, 0.16); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #6b6459; padding-bottom: 7px; border-bottom: 1px solid #e0d7c3;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0;"></span>
+        <span style="font-weight: 600; color: #6d5bd0;">agent</span>
+        <span>swept $0–$100k · just now</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 9px; border-radius: 10px; padding: 5px 7px; background: #efe9db;">
+        <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #e8e2d4;"><path d="M2,28 L18,20 L26,14 L30,24 L44,18 L56,12" fill="none" stroke="#201c15" stroke-width="1.6"/></svg>
+        <span style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 12.5px; font-weight: 500;">Income map $0–$100k</span>
+          <span style="font-size: 11px; color: #665f4f;"><b style="color: #047857; font-weight: 600;">YOU</b> · 7 cliffs</span>
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 9px; border-radius: 10px; padding: 5px 7px;">
+        <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #efe9db;"><path d="M2,27 L20,18 L28,12 L32,22 L46,16 L56,10" fill="none" stroke="#665f4f" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+        <span style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 12.5px; color: #6b6459;">What if: no childcare assistance</span>
+          <span style="font-size: 11px; color: #665f4f;"><b style="color: #047857; font-weight: 600;">YOU</b> · vs today</span>
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 9px; border-radius: 10px; padding: 5px 7px;">
+        <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #efe9db;"><path d="M2,29 L20,24 L30,20 L34,26 L48,21 L56,17" fill="none" stroke="#665f4f" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+        <span style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 12.5px; color: #6b6459;">Without Medicaid</span>
+          <span style="font-size: 11px; color: #665f4f;"><b style="color: #5b49bd; font-weight: 600;">AGENT</b> · $12k rides on it</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; font-size: 12.5px; color: #6b6459; padding: 0 4px;">
+    <span><b style="font-weight: 600; color: #201c15;">History popover:</b> the whole rail collapses to one “explored · 3” chip in the map head; the pulse dot carries the live ticker.</span>
+    <span><b style="font-weight: 600; color: #201c15;">Wins:</b> cheapest possible — zero standing space.</span>
+    <span style="margin-left: auto;"><b style="font-weight: 600; color: #201c15;">Tradeoff:</b> history goes out of sight, and the agent’s live moves lose their stage — weakest for the demo.</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

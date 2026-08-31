@@ -169,7 +169,7 @@ export function DiffChart({ diff, label }: { diff: DiffResult; label: string }) 
               fontSize={13}
               fontWeight={600}
               fill="#2563eb"
-              stroke="#ffffff"
+              stroke="#f5f1e8"
               strokeWidth={3.5}
               paintOrder="stroke"
             >

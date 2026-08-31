@@ -291,7 +291,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
                 strokeWidth={1.6}
                 opacity={0.9}
               />
-              <circle cx={youX} cy={youY} r={5.5} fill="#2563eb" stroke="#ffffff" strokeWidth={2} />
+              <circle cx={youX} cy={youY} r={5.5} fill="#2563eb" stroke="#f5f1e8" strokeWidth={2} />
               <text
                 x={youX}
                 y={M.top - 10}
@@ -299,7 +299,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
                 fontSize={13}
                 fontWeight={600}
                 fill="#2563eb"
-                stroke="#ffffff"
+                stroke="#f5f1e8"
                 strokeWidth={3.5}
                 paintOrder="stroke"
               >
@@ -345,7 +345,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
                 width={72}
                 height={21}
                 rx={10.5}
-                fill={isSelected ? CLIFF_COLOR : `rgba(204,59,59,${isWorst ? 0.14 : 0.07})`}
+                fill={isSelected ? CLIFF_COLOR : `rgba(194,52,52,${isWorst ? 0.14 : 0.07})`}
                 stroke={CLIFF_COLOR}
                 strokeWidth={isSelected ? 1.4 : isWorst ? 1.2 : 0.8}
               />
@@ -355,13 +355,30 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
                 textAnchor="middle"
                 fontSize={12.5}
                 fontWeight={600}
-                fill={isSelected ? "#ffffff" : CLIFF_COLOR}
+                fill={isSelected ? "#f5f1e8" : CLIFF_COLOR}
               >
                 ▼ {fmtK(Math.abs(cliff.net_drop))}
               </text>
             </g>
           );
         })}
+
+        {/* the selected cliff holds a red line until deselected — unlike the
+            crosshair, it doesn't follow the pointer */}
+        {selectedCliff &&
+          selectedCliff.from_x >= xMin &&
+          selectedCliff.from_x <= xMax && (
+            <line
+              x1={sx(selectedCliff.from_x)}
+              y1={M.top}
+              x2={sx(selectedCliff.from_x)}
+              y2={H - M.bottom}
+              stroke={CLIFF_COLOR}
+              strokeWidth={1.6}
+              opacity={0.9}
+              pointerEvents="none"
+            />
+          )}
 
         {/* a digest row is being hovered: light up that cliff on the map */}
         {hoverCliffX !== null && hoverCliffX >= xMin && hoverCliffX <= xMax && (
@@ -423,7 +440,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
               fontSize={12}
               fontWeight={600}
               fill={C.inkPrimary}
-              stroke="#ffffff"
+              stroke="#f5f1e8"
               strokeWidth={3.5}
               paintOrder="stroke"
             >
@@ -445,7 +462,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           style={{ left: `${(Math.min(hoverPx, W - 220) / W) * 100}%` }}
         >
           <div className="tt-title">
-            earnings {fmt(sweep.x[idx])} · keeps {fmt(sweep.net_income[idx])}
+            earning {fmt(sweep.x[idx])} · you keep {fmt(sweep.net_income[idx])}
           </div>
           {[...PROGRAM_LAYERS].reverse().map((layer) => {
             const v = sweep.programs[layer.slug]?.[idx] ?? 0;

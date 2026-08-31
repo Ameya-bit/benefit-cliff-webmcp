@@ -1,0 +1,24 @@
+<path d="M 232 12.0 C 316 12.0, 316 20.0, 410 20.0 L 410 72.7 C 316 72.7, 316 64.7, 232 64.7 Z" fill="#1f1b16" opacity="0.4"/>
+<path d="M 232 77.3 C 316 77.3, 316 72.7, 410 72.7 L 410 99.9 C 316 99.9, 316 104.5, 232 104.5 Z" fill="#008300" opacity="0.4"/>
+<path d="M 232 112.5 C 316 112.5, 316 99.9, 410 99.9 L 410 112.8 C 316 112.8, 316 125.3, 232 125.3 Z" fill="#2a78d6" opacity="0.4"/>
+<path d="M 232 133.3 C 316 133.3, 316 112.8, 410 112.8 L 410 121.1 C 316 121.1, 316 141.6, 232 141.6 Z" fill="#4a3aa7" opacity="0.4"/>
+<path d="M 232 149.6 C 316 149.6, 316 121.1, 410 121.1 L 410 128.9 C 316 128.9, 316 157.5, 232 157.5 Z" fill="#e34948" opacity="0.4"/>
+<path d="M 232 165.5 C 316 165.5, 316 128.9, 410 128.9 L 410 132.4 C 316 132.4, 316 169.0, 232 169.0 Z" fill="#eda100" opacity="0.4"/>
+<path d="M 232 64.7 C 316 64.7, 316 191.0, 410 191.0 L 410 194.7 C 316 194.7, 316 69.3, 232 69.3 Z" fill="#b3b3b3" opacity="0.35"/>
+<rect x="410" y="191.0" width="10" height="3.7" rx="2.5" fill="#b3b3b3"/>
+<text x="430" y="196.8" font-size="11.5" fill="#77705f">Taxes · −$2,560</text>
+<rect x="222" y="12.0" width="10" height="57.3" rx="3" fill="#1f1b16"/>
+<text x="210" y="40.0" text-anchor="end" font-size="12" fill="#1f1b16">The job · $32,000</text>
+<rect x="222" y="77.3" width="10" height="27.2" rx="3" fill="#008300"/>
+<text x="210" y="94.9" text-anchor="end" font-size="12" fill="#1f1b16">Childcare help (CCCAP) · $15,200</text>
+<rect x="222" y="112.5" width="10" height="12.9" rx="3" fill="#2a78d6"/>
+<text x="210" y="122.9" text-anchor="end" font-size="12" fill="#1f1b16">Medicaid · $7,200</text>
+<rect x="222" y="133.3" width="10" height="8.3" rx="3" fill="#4a3aa7"/>
+<text x="210" y="141.5" text-anchor="end" font-size="12" fill="#1f1b16">Earned-income credit · $4,640</text>
+<rect x="222" y="149.6" width="10" height="7.9" rx="3" fill="#e34948"/>
+<text x="210" y="157.6" text-anchor="end" font-size="12" fill="#1f1b16">Child tax credit · $4,400</text>
+<rect x="222" y="165.5" width="10" height="3.5" rx="3" fill="#eda100"/>
+<text x="210" y="171.3" text-anchor="end" font-size="12" fill="#1f1b16">Food aid (SNAP) · $1,950</text>
+<rect x="410" y="20" width="12" height="112.4" rx="4" fill="#1f1b16"/>
+<text x="432" y="58.2" font-size="11.5" fill="#6b6459"><tspan x="432">What your</tspan><tspan x="432" dy="14">family keeps</tspan></text>
+<text x="432" y="92.2" font-size="13" font-weight="600" fill="#1f1b16">$62,830</text>

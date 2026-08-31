@@ -35,7 +35,7 @@ export function AnnotationPins({ annotations, xMin, xMax, sx, yAt }: Props) {
         const flip = px > rightEdge - 170;
         return (
           <g key={a.id} className="annotation">
-            <circle cx={px} cy={curveY} r={2.5} fill={color} stroke="#ffffff" strokeWidth={1} />
+            <circle cx={px} cy={curveY} r={2.5} fill={color} stroke="#f5f1e8" strokeWidth={1} />
             <line x1={px} y1={curveY + 3} x2={px} y2={py - 9} stroke={color} strokeWidth={1.2} />
             <path d={`M${px - 5},${py - 9} h10 v8 l-5 4 -5 -4 Z`} fill={color}>
               <title>{`${a.source === "agent" ? "Agent" : "You"}: ${a.note}`}</title>
@@ -47,7 +47,7 @@ export function AnnotationPins({ annotations, xMin, xMax, sx, yAt }: Props) {
               fontSize={11.5}
               fontWeight={600}
               fill={color}
-              stroke="#ffffff"
+              stroke="#f5f1e8"
               strokeWidth={3}
               paintOrder="stroke"
             >

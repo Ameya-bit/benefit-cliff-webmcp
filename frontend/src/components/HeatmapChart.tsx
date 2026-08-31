@@ -176,7 +176,7 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
                   cy={sy(row[Math.round(((earnings - heatmap.axis_x.min) / (heatmap.axis_x.max - heatmap.axis_x.min || 1)) * (nx - 1))], k)}
                   r={5}
                   fill="#2563eb"
-                  stroke="#ffffff"
+                  stroke="#f5f1e8"
                   strokeWidth={2.5}
                 />
               )}
@@ -194,7 +194,7 @@ export function HeatmapChart({ heatmap }: { heatmap: HeatmapResult }) {
                       fontSize={12.5}
                       fontWeight={600}
                       fill="#8f1d1d"
-                      stroke="#ffffff"
+                      stroke="#f5f1e8"
                       strokeWidth={3.5}
                       paintOrder="stroke"
                       pointerEvents="none"

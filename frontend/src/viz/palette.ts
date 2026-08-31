@@ -37,13 +37,14 @@ export const programColor = (slug: string): string =>
 export const BASE_LAYER = { label: "Pay after taxes", color: "#c3c2b7" };
 
 /** Status color for cliff badges (never reused as a series color). */
-export const CLIFF_COLOR = "#cc3b3b";
+export const CLIFF_COLOR = "#c23434";
 
+/** Charts sit on sand cards; seams and halos use the card color. */
 export const CHART_CHROME = {
-  surface: "#ffffff",
-  grid: "#ececec",
-  axis: "#dddddd",
-  inkPrimary: "#171717",
-  inkSecondary: "#666666",
-  inkMuted: "#767676",
+  surface: "#f5f1e8",
+  grid: "#e7dfcd",
+  axis: "#d6cdb9",
+  inkPrimary: "#201c15",
+  inkSecondary: "#6b6459",
+  inkMuted: "#6e6759",
 };

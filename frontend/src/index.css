@@ -1,21 +1,25 @@
 :root {
   color-scheme: light;
-  /* Light-committed. Wallet grammar: soft grey ground, white cards, one
-     radius, one shadow. */
-  --page: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #fafafa;
-  --border: #ececec;
-  --border-2: #dddddd;
-  --radius-card: 14px;
-  --shadow-card: 0 1px 2px rgba(23, 23, 23, 0.05);
-  --ink-primary: #171717;
-  --ink-secondary: #666666;
-  --ink-muted: #707070; /* AA on the --page grey, not just on white */
+  /* Stone & sand: sand cards on a deeper stone ground, squircle corners,
+     depth from soft warm shadows instead of borders. */
+  --page: #e8e2d4;
+  --surface: #f5f1e8;
+  --surface-2: #efe9db;
+  --border: #e0d7c3;
+  --border-2: #cfc5ad;
+  --radius-card: 22px;
+  --shadow-card: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08);
+  --ink-primary: #201c15;
+  --ink-secondary: #6b6459;
+  --ink-muted: #665f4f; /* AA on the stone ground, not just on sand cards */
   --accent: #2563eb;
   --agent: #6d5bd0;
   --human: #047857;
-  --cliff: #cc3b3b;
+  --cliff: #c23434; /* a step darker than the old #cc3b3b: AA for 13px text on sand */
+  /* The sheet surface (9C sand-squircle modals) and the voice serif. */
+  --sand: #f5f1e8;
+  --radius-sheet: 28px;
+  --serif: "Newsreader", Georgia, serif;
   /* Type scale (9B): floor at 12px for anything informational; one hero
      size so a single number can own the screen. */
   --fs-xs: 12px;

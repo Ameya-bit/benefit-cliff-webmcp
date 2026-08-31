@@ -172,7 +172,7 @@ export function MapControls() {
                     ).catch(() => {});
                   }}
                 >
-                  map earnings × childcare
+                  you’re weighing childcare costs
                 </button>
               )}
             </div>

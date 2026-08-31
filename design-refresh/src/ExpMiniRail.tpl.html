@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; }
+    a { color: #6b6459; } a:hover { color: #201c15; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; background: #e8e2d4; color: #201c15; padding: 16px 26px 12px; display: flex; flex-direction: column; gap: 18px; font-size: 15px; line-height: 1.5;">
+
+  <div style="display: flex; align-items: baseline; gap: 16px;">
+    <div style="display: flex; align-items: baseline; gap: 10px; white-space: nowrap;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 19px; letter-spacing: -0.01em;">Peira</span>
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 13.5px; color: #665f4f;">see what a raise really does</span>
+    </div>
+    <div style="flex: 1; display: flex; justify-content: flex-end;">
+      <span style="font-size: 13.5px; color: #6b6459;">
+        <b style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-weight: 500; font-size: 1.1em; color: #201c15;">Single adult, 30</b>
+        <span style="color: #cfc5ad;"> · </span>one child (3)
+        <span style="color: #cfc5ad;"> · </span><b style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-weight: 500; font-size: 1.1em; color: #201c15;">$50,000</b>/yr
+        <span style="color: #cfc5ad;"> · </span>childcare assistance ✓
+        <span style="color: #665f4f; font-size: 12px;"> ✎ edit</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- map card -->
+  <div style="background: #f5f1e8; border-radius: 22px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 14px 22px 10px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0d7c3; margin-bottom: 10px;">
+      <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 15px; color: #6b6459;">what you keep at every income</span>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">What if… ▾</span>
+        <span style="font-size: 12.5px; font-weight: 500; color: #6b6459; background: #efe9db; border-radius: 999px; padding: 5px 13px;">zoom</span>
+      </div>
+    </div>
+    <svg viewBox="0 0 1240 430" style="width: 100%; height: 400px; display: block;">
+      <!--INC:parts/chart-sand.svg-->
+      <g>
+        <line x1="652.7" y1="36" x2="652.7" y2="400" stroke="#2563eb" stroke-width="1.6" opacity="0.9"/>
+        <circle cx="652.7" cy="131.4" r="5.5" fill="#2563eb" stroke="#f5f1e8" stroke-width="2"/>
+        <text x="652.7" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#2563eb" stroke="#f5f1e8" stroke-width="3.5" paint-order="stroke">you — $50k</text>
+      </g>
+      <g>
+        <line x1="500.6" y1="140" x2="500.6" y2="153.4" stroke="#c23434" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+        <circle cx="500.6" cy="153.4" r="4" fill="#c23434"/>
+        <rect x="464.6" y="119.5" width="72" height="21" rx="10.5" fill="#c23434"/>
+        <text x="500.6" y="134" text-anchor="middle" font-size="12.5" font-weight="600" fill="#f5f1e8">▼ $8k</text>
+      </g>
+      <g>
+        <line x1="828.2" y1="138" x2="828.2" y2="151" stroke="#c23434" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.55"/>
+        <circle cx="828.2" cy="151" r="4" fill="#c23434"/>
+        <rect x="792.2" y="117.5" width="72" height="21" rx="10.5" fill="rgba(194,52,52,0.08)" stroke="#c23434" stroke-width="0.8"/>
+        <text x="828.2" y="132" text-anchor="middle" font-size="12.5" font-weight="600" fill="#c23434">▼ $2.8k</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- tile row: flow · explainer · a 64px vertical mini-rail -->
+  <div style="flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 18px;">
+    <div style="flex: 1.15; background: #f5f1e8; border-radius: 22px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 16px 22px; display: flex; flex-direction: column; position: relative;">
+      <span style="position: absolute; top: 14px; right: 16px; color: #665f4f; font-size: 14px;">⤢</span>
+      <div style="display: flex; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0d7c3; margin-bottom: 10px;">
+        <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 15px; color: #6b6459;">where your money comes from</span>
+        <span style="font-size: 13px; color: #6b6459;">at your earnings — <b style="font-weight: 600;">$32,000</b></span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-size: 30px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.1;">$62,830</span>
+        <span style="font-size: 13px; color: #6b6459;">what your family keeps</span>
+      </div>
+      <svg viewBox="0 0 560 235" style="flex: 1; min-height: 0; width: 100%; display: block;">
+        <!--INC:parts/flow-compact-sand.svg-->
+      </svg>
+    </div>
+    <div style="flex: 1; background: #f5f1e8; border-radius: 22px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 16px 22px; display: flex; flex-direction: column; gap: 9px;">
+      <div style="display: flex; align-items: baseline; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0d7c3;">
+        <span style="font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 15px; color: #c23434;">where a raise would cost you</span>
+        <span style="font-size: 13px; color: #6b6459;">7 on this map, biggest first</span>
+      </div>
+      <!-- the live ticker moves here, atop the reading tile -->
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #6b6459; padding-bottom: 6px; border-bottom: 1px solid #e0d7c3;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0;"></span>
+        <span style="font-weight: 600; color: #6d5bd0;">agent</span>
+        <span>swept $0–$100k · just now</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; background: rgba(194, 52, 52, 0.05); border-radius: 12px; padding: 9px 13px; font-size: 13px; color: #6b6459; box-shadow: inset 0 0 0 1px rgba(194, 52, 52, 0.4);">
+        <span style="color: #c23434; font-weight: 600; white-space: nowrap;">▼ $8k</span>
+        <span>dropping to $29k</span>
+        <span style="margin-left: auto; font-size: 12px; color: #665f4f;">Medicaid</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; background: #efe9db; border-radius: 12px; padding: 9px 13px; font-size: 13px; color: #6b6459;">
+        <span style="color: #c23434; font-weight: 600; white-space: nowrap;">▼ $7k</span>
+        <span>dropping to $31k</span>
+        <span style="margin-left: auto; font-size: 12px; color: #665f4f;">Medicaid</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; background: #efe9db; border-radius: 12px; padding: 9px 13px; font-size: 13px; color: #6b6459;">
+        <span style="color: #c23434; font-weight: 600; white-space: nowrap;">▼ $651</span>
+        <span>rising to $42k</span>
+        <span style="margin-left: auto; font-size: 12px; color: #665f4f;">Food aid (SNAP)</span>
+      </div>
+    </div>
+    <!-- the mini-rail: vertical browser tabs, icon-only, hover reveals -->
+    <div style="flex: none; width: 68px; background: #f5f1e8; border-radius: 18px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.06), 0 14px 36px rgba(32, 28, 21, 0.08); padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative;">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: #6d5bd0; margin-bottom: 2px;"></span>
+      <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #e8e2d4; box-shadow: 0 0 0 1.5px #201c15;"><path d="M2,28 L18,20 L26,14 L30,24 L44,18 L56,12" fill="none" stroke="#201c15" stroke-width="1.6"/></svg>
+      <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #efe9db;"><path d="M2,27 L20,18 L28,12 L32,22 L46,16 L56,10" fill="none" stroke="#665f4f" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+      <svg viewBox="0 0 58 32" style="width: 52px; border-radius: 8px; background: #efe9db;"><path d="M2,29 L20,24 L30,20 L34,26 L48,21 L56,17" fill="none" stroke="#665f4f" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+      <!-- hover state: the label floats out to the left -->
+      <div style="position: absolute; top: 96px; right: 76px; background: #f5f1e8; border-radius: 12px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.08), 0 14px 36px rgba(32, 28, 21, 0.16); padding: 7px 12px; white-space: nowrap; display: flex; flex-direction: column; line-height: 1.3;">
+        <span style="font-size: 12.5px; font-weight: 500;">What if: no childcare assistance</span>
+        <span style="font-size: 11px; color: #665f4f;"><b style="color: #047857; font-weight: 600;">YOU</b> · vs today</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; font-size: 12.5px; color: #6b6459; padding: 0 4px;">
+    <span><b style="font-weight: 600; color: #201c15;">Vertical mini-rail:</b> browser tabs turned sideways — 68px of icon-only history, labels on hover.</span>
+    <span><b style="font-weight: 600; color: #201c15;">Wins:</b> scales to 12 entries without scrolling; costs almost no width.</span>
+    <span style="margin-left: auto;"><b style="font-weight: 600; color: #201c15;">Tradeoff:</b> titles hidden until hover; the ticker has to move (shown atop the cliffs tile).</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

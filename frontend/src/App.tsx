@@ -50,7 +50,7 @@ function CanvasArea() {
       <>
         <div className="mode-banner view-banner">
           <span>
-            <b>what if: {view.label}</b> — dashed line, against today's household
+            <b>What if: {view.label}.</b> The dashed line is today’s household.
           </span>
           {backToMap}
         </div>
@@ -63,7 +63,8 @@ function CanvasArea() {
       {view.mode === "reform" && (
         <div className="mode-banner reform-banner">
           <span>
-            <b>changed rules</b> — {view.label} · dashed line is current law
+            <b>Under the changed rules</b> — {view.label}. The dashed line is
+            the law as it stands.
           </span>
           <button className="btn" onClick={restoreBaseline}>
             back to current law
@@ -73,12 +74,14 @@ function CanvasArea() {
       {view.mode === "ablate" && (
         <div className="mode-banner ablate-banner">
           <span>
-            <b>without {programLabel(view.program)}</b>
+            <b>Take away {programLabel(view.program)}</b>
             {Object.keys(view.interactions).length > 0
-              ? ` — also moved: ${Object.entries(view.interactions)
+              ? `, and ${Object.entries(view.interactions)
                   .map(([slug, v]) => `${programLabel(slug)} (${fmt(v)})`)
-                  .join(", ")}`
-              : " — nothing else depends on it"}
+                  .join(", ")} ${
+                  Object.keys(view.interactions).length === 1 ? "moves" : "move"
+                } too.`
+              : ". Nothing else depends on it."}
           </span>
           <button className="btn" onClick={restoreBaseline}>
             restore
@@ -136,7 +139,7 @@ function FlowHead({
   return (
     <>
       <div className="sec-head">
-        <span className="eyebrow">Where the money comes from</span>
+        <span className="eyebrow">Where your money comes from</span>
         <span className="at">
           {onCursor ? (
             <>
@@ -144,7 +147,7 @@ function FlowHead({
             </>
           ) : (
             <>
-              at this household’s earnings — <b>{fmt(earnings)}</b>
+              at your earnings — <b>{fmt(earnings)}</b>
             </>
           )}
           {flowLabel && <em> · {flowLabel}</em>}
@@ -184,7 +187,7 @@ function FlowSheet({
   return (
     <>
       <div className="flow-modal-backdrop" onClick={onClose} />
-      <div className="flow-modal" role="dialog" aria-modal="true" aria-label="Where the money comes from">
+      <div className="flow-modal" role="dialog" aria-modal="true" aria-label="Where your money comes from">
         <button
           ref={closeRef}
           className="close-btn"
@@ -229,12 +232,17 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <div className="mark">
+        <button
+          className="mark"
+          title="Back to the scenarios"
+          aria-label="Peira — back to the scenarios"
+          onClick={() => usePeiraStore.getState().goHome()}
+        >
           Peira
           <small>
             see what a raise <span className="serif-it">really</span> does
           </small>
-        </div>
+        </button>
         <HouseholdBar />
       </header>
 
@@ -247,6 +255,14 @@ export default function App() {
         ) : (
           <>
             <StatusBanners />
+            {/* The filmstrip dock: session history as a slim strip up top,
+                the live ticker riding its right end. */}
+            <div className="filmstrip">
+              <span className="filmstrip-label">explored</span>
+              <div className="filmstrip-divider" aria-hidden="true" />
+              <Rail />
+              <ActivityTicker />
+            </div>
             <section className="map-card map-zone">
               <div className="map-head">
                 <span className="eyebrow">
@@ -278,18 +294,11 @@ export default function App() {
                 </div>
               </div>
               <ExplainerPanel />
-              <div className="tile explored-tile">
-                <div className="sec-head">
-                  <span className="eyebrow">Explored so far</span>
-                </div>
-                <ActivityTicker />
-                <Rail />
-              </div>
             </section>
 
             <p className="provenance">
-              Computed with policyengine-us · Colorado rules · 2026 — model
-              estimates, not benefits advice
+              Figured with PolicyEngine’s model of Colorado’s 2026 rules —
+              estimates to think with, not benefits advice
             </p>
 
             <ConnectorLayer container={mainRef} />

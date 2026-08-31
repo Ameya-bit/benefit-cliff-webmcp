@@ -75,6 +75,8 @@ interface PeiraState {
     label: string,
   ) => void;
   restoreBaseline: () => void;
+  /** Back to the scenario page (keeps household, log, and gallery intact). */
+  goHome: () => void;
   setView: (view: CanvasView) => void;
   setCurrentIndex: (index: number | null) => void;
   selectCliff: (cliff: Cliff | null, source: "agent" | "human") => void;
@@ -165,6 +167,17 @@ export const usePeiraStore = create<PeiraState>((set, get) => ({
           }
         : {},
     ),
+  goHome: () =>
+    set({
+      sweep: null,
+      baselineSweep: null,
+      view: { mode: "sweep" },
+      selectedCliff: null,
+      trace: null,
+      currentIndex: null,
+      focusProgram: null,
+      activeGalleryId: null,
+    }),
   setView: (view) => set({ view }),
   setTrace: (trace) => set({ trace }),
   addAnnotation: (annotation) =>

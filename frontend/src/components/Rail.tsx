@@ -8,7 +8,7 @@
 import { useState } from "react";
 import type { GalleryEntry } from "../state/store";
 import { usePeiraStore } from "../state/store";
-import { CHART_CHROME as C } from "../viz/palette";
+import { CHART_CHROME as C, CLIFF_COLOR } from "../viz/palette";
 
 const TW = 120;
 const TH = 30;
@@ -62,7 +62,7 @@ function Thumb({ entry }: { entry: GalleryEntry }) {
             />
           ))}
           {[7, 15].map((y) => (
-            <g key={`r${y}`} stroke="#cc3b3b" strokeWidth={1.8}>
+            <g key={`r${y}`} stroke={CLIFF_COLOR} strokeWidth={1.8}>
               <line x1={38} y1={y - 1} x2={44} y2={y + 2.5} />
               <line x1={84} y1={y} x2={89} y2={y + 3} />
             </g>

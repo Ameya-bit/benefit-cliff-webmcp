@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; }
+    a { color: #6b6459; } a:hover { color: #1f1b16; }
+  </style>
+</helmet>
+<div style="width: 1060px; height: 820px; box-sizing: border-box; background: #fbf8f2; color: #1f1b16; padding: 26px 30px; display: flex; flex-direction: column; gap: 16px; font-size: 15px; line-height: 1.5;">
+  <div>
+    <h2 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 26px; letter-spacing: -0.01em;">Grounds &amp; tokens</h2>
+    <p style="margin: 2px 0 0; font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 16px; color: #6b6459;">the program palette never changes — only the stage it stands on.</p>
+  </div>
+
+  <!-- three grounds, side by side -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+    <!-- current -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: #77705f;">Today — cool grey</span>
+      <div style="background: #f4f5f7; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #e9e3d5;">
+        <div style="background: #ffffff; border: 1px solid #ececec; border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 2px rgba(23, 23, 23, 0.05);">
+          <span style="font-size: 11px; color: #707070;">card #ffffff on #f4f5f7</span>
+          <div style="display: flex; gap: 2px; padding-top: 8px;">
+            <span style="flex: 1.4; height: 22px; background: #c3c2b7; border-radius: 3px 0 0 3px;"></span>
+            <span style="flex: 1; height: 22px; background: #2a78d6;"></span>
+            <span style="flex: 0.7; height: 22px; background: #eda100;"></span>
+            <span style="flex: 1.6; height: 22px; background: #008300;"></span>
+            <span style="flex: 0.8; height: 22px; background: #4a3aa7;"></span>
+            <span style="flex: 0.6; height: 22px; background: #e34948; border-radius: 0 3px 3px 0;"></span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; font-size: 10.5px; color: #707070;">
+          <span style="flex: 1; background: #171717; color: #ffffff; border-radius: 5px; padding: 3px 6px;">#171717</span>
+          <span style="flex: 1; background: #666666; color: #ffffff; border-radius: 5px; padding: 3px 6px;">#666666</span>
+          <span style="flex: 1; background: #2563eb; color: #ffffff; border-radius: 5px; padding: 3px 6px;">#2563eb</span>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: #77705f;">Competent, anonymous — reads “dashboard.”</span>
+    </div>
+    <!-- warm paper -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: #77705f;">A — warm paper</span>
+      <div style="background: #f3efe7; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #e9e3d5;">
+        <div style="background: #fbf8f2; border: 1px solid #e9e3d5; border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 2px rgba(31, 27, 22, 0.05);">
+          <span style="font-size: 11px; color: #77705f;">card #fbf8f2 on #f3efe7</span>
+          <div style="display: flex; gap: 2px; padding-top: 8px;">
+            <span style="flex: 1.4; height: 22px; background: #c3c2b7; border-radius: 3px 0 0 3px;"></span>
+            <span style="flex: 1; height: 22px; background: #2a78d6;"></span>
+            <span style="flex: 0.7; height: 22px; background: #eda100;"></span>
+            <span style="flex: 1.6; height: 22px; background: #008300;"></span>
+            <span style="flex: 0.8; height: 22px; background: #4a3aa7;"></span>
+            <span style="flex: 0.6; height: 22px; background: #e34948; border-radius: 0 3px 3px 0;"></span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; font-size: 10.5px;">
+          <span style="flex: 1; background: #1f1b16; color: #fbf8f2; border-radius: 5px; padding: 3px 6px;">#1f1b16</span>
+          <span style="flex: 1; background: #6b6459; color: #fbf8f2; border-radius: 5px; padding: 3px 6px;">#6b6459</span>
+          <span style="flex: 1; background: #2563eb; color: #fbf8f2; border-radius: 5px; padding: 3px 6px;">#2563eb</span>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: #77705f;">Small token edit, big shift — friendliest step from today.</span>
+    </div>
+    <!-- stone & sand -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: #77705f;">B — stone &amp; sand</span>
+      <div style="background: #e8e2d4; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #e0d7c3;">
+        <div style="background: #f5f1e8; border-radius: 14px; padding: 10px 12px; box-shadow: 0 2px 6px rgba(32, 28, 21, 0.08), 0 10px 24px rgba(32, 28, 21, 0.08);">
+          <span style="font-size: 11px; color: #77705f;">card #f5f1e8 on #e8e2d4</span>
+          <div style="display: flex; gap: 2px; padding-top: 8px;">
+            <span style="flex: 1.4; height: 22px; background: #c3c2b7; border-radius: 3px 0 0 3px;"></span>
+            <span style="flex: 1; height: 22px; background: #2a78d6;"></span>
+            <span style="flex: 0.7; height: 22px; background: #eda100;"></span>
+            <span style="flex: 1.6; height: 22px; background: #008300;"></span>
+            <span style="flex: 0.8; height: 22px; background: #4a3aa7;"></span>
+            <span style="flex: 0.6; height: 22px; background: #e34948; border-radius: 0 3px 3px 0;"></span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; font-size: 10.5px;">
+          <span style="flex: 1; background: #201c15; color: #f5f1e8; border-radius: 5px; padding: 3px 6px;">#201c15</span>
+          <span style="flex: 1; background: #6b6459; color: #f5f1e8; border-radius: 5px; padding: 3px 6px;">#6b6459</span>
+          <span style="flex: 1; background: #2563eb; color: #f5f1e8; border-radius: 5px; padding: 3px 6px;">#2563eb</span>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: #77705f;">Warmest and most distinctive — borders vanish, shadows carry depth.</span>
+    </div>
+  </div>
+
+  <!-- radii + shadows -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; flex: 1;">
+    <div style="background: #f3efe7; border: 1px solid #e9e3d5; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: #77705f;">Corner scale</span>
+      <div style="display: flex; gap: 14px; align-items: flex-end; flex: 1;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border: 1px solid #d9d1bf; border-radius: 14px;"></div>
+          <span style="font-size: 11.5px; color: #77705f;">14px — cards (today)</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border: 1px solid #d9d1bf; border-radius: 22px;"></div>
+          <span style="font-size: 11.5px; color: #77705f;">22px — cards, direction B</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border: 1px solid #d9d1bf; border-radius: 28px;"></div>
+          <span style="font-size: 11.5px; color: #77705f;">28px — sheets &amp; modals</span>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: #77705f;">True continuous-corner squircles (Apple-style) need <code style="font-size: 11px;">clip-path</code> or the new <code style="font-size: 11px;">corner-shape</code>; a generous radius gets 90% of the feel with none of the cost.</span>
+    </div>
+    <div style="background: #f3efe7; border: 1px solid #e9e3d5; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: #77705f;">Shadow scale</span>
+      <div style="display: flex; gap: 14px; align-items: flex-end; flex: 1;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border-radius: 14px; box-shadow: 0 1px 2px rgba(31, 27, 22, 0.05);"></div>
+          <span style="font-size: 11.5px; color: #77705f;">rest — cards</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border-radius: 14px; box-shadow: 0 2px 6px rgba(31, 27, 22, 0.06), 0 10px 24px rgba(31, 27, 22, 0.08);"></div>
+          <span style="font-size: 11.5px; color: #77705f;">raised — popovers</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center;">
+          <div style="width: 100%; height: 74px; background: #fbf8f2; border-radius: 14px; box-shadow: 0 4px 12px rgba(31, 27, 22, 0.1), 0 32px 80px rgba(31, 27, 22, 0.3);"></div>
+          <span style="font-size: 11.5px; color: #77705f;">floating — sheets</span>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: #77705f;">Warm-tinted shadows (from the ink, not black) — three steps, used consistently. Rams: less, but better.</span>
+    </div>
+  </div>
+
+  <p style="margin: 0; font-size: 12px; color: #77705f;">The 8 program colors re-validated on both warm surfaces: CVD separation and lightness pass unchanged; same contrast note as on white, already relieved by the legend, white seams, and tooltips.</p>
+</div>
+</x-dc>
+</body>
+</html>

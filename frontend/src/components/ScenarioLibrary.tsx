@@ -9,6 +9,7 @@ import { useState } from "react";
 import { SCENARIO_PRESETS, type ScenarioPreset } from "../presets";
 import { runSweep } from "../probes/runProbes";
 import { usePeiraStore } from "../state/store";
+import { HouseholdCard } from "./HouseholdCard";
 
 function applyPreset(preset: ScenarioPreset) {
   const store = usePeiraStore.getState();
@@ -41,25 +42,12 @@ export function ScenarioLibrary() {
 
   return (
     <div className="scenario-library">
-      <h2>Pick a scenario — or describe your own family</h2>
-      <p className="muted">
-        Each card is a real Colorado situation. Loading one fills the
-        household card and maps the benefits landscape; the question is a
-        good opener to ask the agent.
+      <h2>Start with a family like yours.</h2>
+      <p className="scenario-sub">
+        Every card is a real Colorado situation — load one, then ask what a
+        raise would do. Each card&rsquo;s question is a good opener for the
+        agent.
       </p>
-      <p className="fine-print">
-        Estimates from a computer model of Colorado&rsquo;s 2026 rules
-        (policyengine-us) — not official benefits advice. Check with your
-        caseworker before acting on anything here.
-      </p>
-      {webmcpAvailable === false && (
-        <p className="agent-hint">
-          No agent is attached to this page. Open it in ChatGPT&rsquo;s
-          browser (or Chrome with the WebMCP flag) to let an agent run the
-          probes — or load a scenario and explore by hand: scrub the map,
-          click cliffs, try the what-if buttons.
-        </p>
-      )}
       <div className="scenario-grid">
         {SCENARIO_PRESETS.map((preset) => (
           <div className="scenario-card" key={preset.label}>
@@ -84,6 +72,29 @@ export function ScenarioLibrary() {
           </div>
         ))}
       </div>
+      <div className="own-family">
+        <div className="own-family-intro">
+          <h3 className="own-family-title">or describe your own family</h3>
+          <p className="muted small">
+            Fill in the card and apply — the map draws what every income
+            between $0 and $100k would mean for you.
+          </p>
+        </div>
+        <HouseholdCard />
+      </div>
+      {webmcpAvailable === false && (
+        <p className="agent-hint">
+          No agent is attached to this page. Open it in ChatGPT&rsquo;s
+          browser (or Chrome with the WebMCP flag) to let an agent run the
+          probes — or load a scenario and explore by hand: scrub the map,
+          click cliffs, try the what-if buttons.
+        </p>
+      )}
+      <p className="fine-print">
+        Estimates from a computer model of Colorado&rsquo;s 2026 rules
+        (policyengine-us) — not official benefits advice. Check with your
+        caseworker before acting on anything here.
+      </p>
     </div>
   );
 }
