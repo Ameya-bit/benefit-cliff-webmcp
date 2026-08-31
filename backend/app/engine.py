@@ -1,23 +1,34 @@
-"""Warm policyengine-us engine with a single cached tax-benefit system.
+"""Warm policyengine-us engine: one resident tax-benefit system, edited in
+place for reforms and ablations.
 
-Building a (reformed) CountryTaxBenefitSystem costs ~5s, but each one holds
-~1.2GB resident (measured Aug 2026) — caching several OOM-killed the 2GB
-production instance (exit 137). So exactly ONE system lives in memory at a
-time: switching reform/ablation evicts the old system and rebuilds (~5s),
-and every public run_* entry point serializes on _ENGINE_LOCK so an
-in-flight computation's system can't be evicted under it. The
-health-benefits switch is part of the permanent baseline: without it,
-Medicaid/CHIP/ACA value is excluded from net income and those cliffs are
-invisible.
+Building a CountryTaxBenefitSystem costs ~5s (~20s on the production vCPU)
+and holds ~1.2GB resident (measured Aug 2026) — rebuilding one per
+reform/ablation made those probes crawl, and caching several OOM-killed the
+2GB instance (exit 137). But the edits themselves are cheap and revertible:
+a parametric reform is Parameter.update() on the parameter tree plus a
+flush of the flattened at-instant snapshot cache, and an ablation swaps a
+formula out of system.variables. So the ONE baseline system built at boot
+serves everything — _edited_system() applies the requested edit, the
+computation runs, and a finally-block restores the saved state exactly
+(verified bit-identical to freshly rebuilt systems across all 8 ablation
+programs and all whitelisted reform parameters, Aug 2026).
+
+Every public run_* entry point serializes on _ENGINE_LOCK, so an in-flight
+computation never sees another request's edit. The health-benefits switch
+is part of the permanent baseline: without it, Medicaid/CHIP/ACA value is
+excluded from net income and those cliffs are invisible.
 """
 
-import ctypes
-import gc
 import json
 import threading
+from collections import OrderedDict
+from contextlib import contextmanager
 from functools import wraps
 
+from pydantic import BaseModel
+
 import numpy as np
+from policyengine_core.periods import instant
 from policyengine_core.reforms import Reform
 from policyengine_us import Simulation
 from policyengine_us.system import CountryTaxBenefitSystem
@@ -35,63 +46,119 @@ BASELINE_REFORM = {
 
 
 _ENGINE_LOCK = threading.RLock()
-_system_key: tuple[str, str] | None = None
-_system: CountryTaxBenefitSystem | None = None
+_BASELINE_SYSTEM: CountryTaxBenefitSystem | None = None
 
 
-def _serialized(fn):
-    """Run the whole engine call under the lock: computations never overlap,
-    so the single cached system can't be evicted while a request uses it."""
+# Answers are tiny (~hundreds of KB of JSON) and deterministic for a given
+# request, so they are memoized even though the 1.2GB systems that produce
+# them cannot be. Cached results are shared objects — treat them as frozen.
+_RESULT_CACHE: OrderedDict[str, dict] = OrderedDict()
+_RESULT_CACHE_MAX = 128
+_CACHE_LOCK = threading.Lock()
+
+
+def _cache_key(fn_name: str, args: tuple, kwargs: dict) -> str:
+    def encode(value):
+        return value.model_dump() if isinstance(value, BaseModel) else value
+
+    return json.dumps(
+        [fn_name, [encode(a) for a in args], {k: encode(v) for k, v in kwargs.items()}],
+        sort_keys=True,
+        default=str,
+    )
+
+
+def _cache_get(key: str) -> dict | None:
+    with _CACHE_LOCK:
+        if key in _RESULT_CACHE:
+            _RESULT_CACHE.move_to_end(key)
+            return _RESULT_CACHE[key]
+    return None
+
+
+def _memoized(fn):
+    """Serve repeats from the answer cache; compute misses under the engine
+    lock so the single cached system can't be evicted mid-computation.
+    Cache hits deliberately skip the engine lock — a fast repeat probe must
+    not queue behind a 60s minimal_fix in progress."""
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        key = _cache_key(fn.__name__, args, kwargs)
+        if (hit := _cache_get(key)) is not None:
+            return hit
         with _ENGINE_LOCK:
-            return fn(*args, **kwargs)
+            # an identical call may have landed while we waited for the lock
+            if (hit := _cache_get(key)) is not None:
+                return hit
+            result = fn(*args, **kwargs)
+            with _CACHE_LOCK:
+                _RESULT_CACHE[key] = result
+                while len(_RESULT_CACHE) > _RESULT_CACHE_MAX:
+                    _RESULT_CACHE.popitem(last=False)
+            return result
 
     return wrapper
 
 
-def _release_memory() -> None:
-    gc.collect()
+def _baseline_system() -> CountryTaxBenefitSystem:
+    global _BASELINE_SYSTEM
+    if _BASELINE_SYSTEM is None:
+        reform = Reform.from_dict(BASELINE_REFORM, country_id="us")
+        _BASELINE_SYSTEM = CountryTaxBenefitSystem(reform=reform)
+    return _BASELINE_SYSTEM
+
+
+@contextmanager
+def _edited_system(
+    reform_overrides: dict | None = None, ablate_program: str | None = None
+):
+    """Temporarily edit the resident system in place; restore on exit.
+
+    Reform overrides are {path: {"start.stop": value}} (build_reform_overrides'
+    shape). Reverting reassigns each Parameter's saved values_list and swaps
+    saved Variable objects back, then flushes the flattened at-instant
+    parameter snapshots — formulas read those, not the tree, so a missed
+    flush would silently serve stale numbers. Callers must hold _ENGINE_LOCK
+    and finish every calculation before the context exits.
+    """
+    system = _baseline_system()
+    saved_params: list[tuple[object, list]] = []
+    saved_vars: dict[str, object] = {}
     try:
-        # glibc only: hand freed arenas back to the OS so the container's
-        # cgroup accounting sees them (no-op failure on macOS).
-        ctypes.CDLL("libc.so.6").malloc_trim(0)
-    except OSError:
-        pass
+        for path, period_values in (reform_overrides or {}).items():
+            param = system.parameters.get_child(path)
+            saved_params.append((param, param.values_list))
+            for period_key, value in period_values.items():
+                start, stop = period_key.split(".")
+                param.update(start=instant(start), stop=instant(stop), value=value)
+        for name in ABLATION_VARIABLES[ablate_program] if ablate_program else ():
+            saved_vars[name] = system.variables[name]
+            system.neutralize_variable(name)
+        if saved_params:
+            system._parameters_at_instant_cache = {}
+        yield system
+    finally:
+        for name, original in saved_vars.items():
+            system.variables[name] = original
+        for param, values_list in saved_params:
+            param.values_list = values_list
+            param.parent.clear_parent_cache()
+            param.mark_as_modified()
+        if saved_params:
+            system._parameters_at_instant_cache = {}
 
 
-def _swap_system(key: tuple[str, str], build) -> CountryTaxBenefitSystem:
-    global _system_key, _system
-    if _system_key == key and _system is not None:
-        return _system
-    _system, _system_key = None, None
-    _release_memory()
-    _system = build()
-    _system_key = key
-    return _system
-
-
-def _get_system(reform_key: str) -> CountryTaxBenefitSystem:
-    def build() -> CountryTaxBenefitSystem:
-        overrides = json.loads(reform_key)
-        reform = Reform.from_dict({**BASELINE_REFORM, **overrides}, country_id="us")
-        return CountryTaxBenefitSystem(reform=reform)
-
-    return _swap_system(("reform", reform_key), build)
-
-
-def make_simulation(situation: dict, reform_overrides: dict | None = None) -> Simulation:
-    reform_key = json.dumps(reform_overrides or {}, sort_keys=True)
-    return Simulation(tax_benefit_system=_get_system(reform_key), situation=situation)
+def make_simulation(situation: dict) -> Simulation:
+    return Simulation(tax_benefit_system=_baseline_system(), situation=situation)
 
 
 def warm_up() -> None:
     """Build the baseline system at process start instead of on first request."""
-    _get_system(json.dumps({}))
+    _baseline_system()
 
 
-@_serialized
+@_memoized
 def run_sweep(
     household: Household,
     axis: SweepAxis,
@@ -103,10 +170,10 @@ def run_sweep(
     converted to lists for JSON serialization.
     """
     situation = build_situation(household, axis)
-    sim = make_simulation(situation, reform_overrides)
-
-    x = sim.calculate(axis.variable, YEAR, map_to="household")
-    net_income, programs = _decompose(sim)
+    with _edited_system(reform_overrides) as system:
+        sim = Simulation(tax_benefit_system=system, situation=situation)
+        x = sim.calculate(axis.variable, YEAR, map_to="household")
+        net_income, programs = _decompose(sim)
     cliffs = detect_cliffs(x, net_income, programs)
 
     return {
@@ -130,18 +197,21 @@ def _decompose(sim) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return net_income, programs
 
 
-@_serialized
+@_memoized
 def run_calculate(household: Household, reform_overrides: dict | None = None) -> dict:
     """Single household calculation with per-program decomposition."""
-    sim = make_simulation(build_situation(household), reform_overrides)
-    net_income, programs = _decompose(sim)
+    with _edited_system(reform_overrides) as system:
+        sim = Simulation(
+            tax_benefit_system=system, situation=build_situation(household)
+        )
+        net_income, programs = _decompose(sim)
     return {
         "net_income": float(net_income[0]),
         "programs": {slug: float(values[0]) for slug, values in programs.items()},
     }
 
 
-@_serialized
+@_memoized
 def run_diff(household_a: Household, household_b: Household, axis: SweepAxis) -> dict:
     """Counterfactual comparison: the same sweep over two household scenarios."""
     sweep_a = run_sweep(household_a, axis)
@@ -152,18 +222,7 @@ def run_diff(household_a: Household, household_b: Household, axis: SweepAxis) ->
     return {"a": sweep_a, "b": sweep_b, "net_income_delta": delta}
 
 
-def _get_ablated_system(program: str) -> CountryTaxBenefitSystem:
-    def build() -> CountryTaxBenefitSystem:
-        reform = Reform.from_dict(BASELINE_REFORM, country_id="us")
-        system = CountryTaxBenefitSystem(reform=reform)
-        for variable in ABLATION_VARIABLES[program]:
-            system.neutralize_variable(variable)
-        return system
-
-    return _swap_system(("ablate", program), build)
-
-
-@_serialized
+@_memoized
 def run_ablation(household: Household, axis: SweepAxis, program: str) -> dict:
     """Knock a program out of the mechanism and re-run the sweep.
 
@@ -174,11 +233,12 @@ def run_ablation(household: Household, axis: SweepAxis, program: str) -> dict:
     if program not in ABLATION_VARIABLES:
         raise ValueError(f"unknown program: {program!r}")
     baseline = run_sweep(household, axis)
-    sim = Simulation(
-        tax_benefit_system=_get_ablated_system(program),
-        situation=build_situation(household, axis),
-    )
-    net_income, programs = _decompose(sim)
+    with _edited_system(ablate_program=program) as system:
+        sim = Simulation(
+            tax_benefit_system=system,
+            situation=build_situation(household, axis),
+        )
+        net_income, programs = _decompose(sim)
     x = np.array(baseline["x"])
     interactions = {
         slug: float(np.sum(values - np.array(baseline["programs"][slug])))
@@ -241,7 +301,7 @@ def _trace_gates(sim: Simulation, household: Household, program: str) -> list[di
     return flips
 
 
-@_serialized
+@_memoized
 def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
     """Attribute the local mechanism behavior at one point, down to the rule.
 
@@ -289,7 +349,7 @@ def run_trace(household: Household, at: float, step: float = 1_000) -> dict:
     }
 
 
-@_serialized
+@_memoized
 def run_sweep_2d(
     household: Household, axis_x: SweepAxis, axis_y: SweepAxis, y_person_index: int
 ) -> dict:
@@ -330,7 +390,7 @@ def run_sweep_2d(
     }
 
 
-@_serialized
+@_memoized
 def run_minimal_fix(household: Household, axis: SweepAxis, cliff_at: float) -> dict:
     """Search policy-space for the smallest whitelisted edit that removes a cliff.
 

@@ -6,6 +6,7 @@ request, all state lives in the frontend. Every response uses the
 """
 
 import os
+import threading
 import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
@@ -15,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from . import engine
+from . import engine, prewarm
 from .policy import REFORM_PARAMETERS, build_reform_overrides
 from .programs import ABLATION_VARIABLES
 from .situations import Household, SweepAxis
@@ -28,6 +29,10 @@ ALLOWED_ORIGINS = os.environ.get(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     engine.warm_up()
+    # Fill the answer cache for the preset scenarios without delaying boot.
+    # PEIRA_PREWARM=0 opts out (tests, local dev restarts).
+    if os.environ.get("PEIRA_PREWARM", "1") != "0":
+        threading.Thread(target=prewarm.run, name="prewarm", daemon=True).start()
     yield
 
 
