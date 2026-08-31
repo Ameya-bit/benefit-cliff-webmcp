@@ -7,3 +7,6 @@ dist/
 .DS_Store
 .env
 design-canvas/
+
+# Local Netlify folder
+.netlify
