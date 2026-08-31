@@ -79,8 +79,8 @@ function CliffDigest() {
             >
               <span className="digest-drop">▼ {fmtK(Math.abs(cliff.net_drop))}</span>
               <span className="digest-at">
-                {cliff.from_x < earnings ? "dropping to" : "rising to"}{" "}
-                {fmtK(cliff.from_x)}
+                at {fmtK(cliff.from_x)} —{" "}
+                {cliff.from_x < earnings ? "below you" : "ahead of you"}
               </span>
               <span className="digest-prog">{programLabel(cliff.dominant_program)}</span>
             </button>
@@ -536,7 +536,8 @@ export function ExplainerPanel() {
 
       {forYou !== null && (
         <p>
-          For your family right now: <b>{forYou > 1 ? `${fmt(forYou)}/yr` : "nothing at this income"}</b>.
+          For your family at your {fmt(earnings)}:{" "}
+          <b>{forYou > 1 ? `${fmt(forYou)}/yr` : "nothing"}</b>.
         </p>
       )}
 
