@@ -19,6 +19,7 @@ import { interpolate } from "../probes/analysis";
 import { usePeiraStore } from "../state/store";
 import type { SweepResult } from "../types";
 import { CHART_CHROME as C, PROGRAM_LAYERS } from "../viz/palette";
+import { useAnimatedValue } from "../viz/useAnimatedValue";
 import { useMeasuredBox } from "../viz/useFittedBox";
 
 const NODE_W = 10;
@@ -84,11 +85,20 @@ export function MoneyFlow({
     `M ${X_NODE + NODE_W} ${y1} C ${MID} ${y1}, ${MID} ${y2}, ${X_KEEP} ${y2}` +
     ` L ${X_KEEP} ${y2 + h2} C ${MID} ${y2 + h2}, ${MID} ${y1 + h1}, ${X_NODE + NODE_W} ${y1 + h1} Z`;
 
-  const model = useMemo(() => {
-    if (!sweep || sweep.x.length < 2) return null;
+  // The income the flow should show; animated so a jump (cliff click, pin
+  // release) morphs the streams through the incomes in between — the same
+  // motion as a scrub — instead of snapping.
+  const targetAt = (() => {
+    if (!sweep || sweep.x.length < 2) return 0;
     const idx = currentIndex ?? restIndex;
     const cursorX = idx !== null && idx < sweep.x.length ? sweep.x[idx] : null;
-    const at = Math.max(sweep.x[0], Math.min(cursorX ?? earnings, sweep.x[sweep.x.length - 1]));
+    return Math.max(sweep.x[0], Math.min(cursorX ?? earnings, sweep.x[sweep.x.length - 1]));
+  })();
+  const animatedAt = useAnimatedValue(targetAt);
+
+  const model = useMemo(() => {
+    if (!sweep || sweep.x.length < 2) return null;
+    const at = Math.max(sweep.x[0], Math.min(animatedAt, sweep.x[sweep.x.length - 1]));
     const programValues = PROGRAM_LAYERS.map((layer) => ({
       ...layer,
       value: interpolate(sweep.x, sweep.programs[layer.slug] ?? [0, 0], at),
@@ -146,7 +156,7 @@ export function MoneyFlow({
       keepsTop: TOP + 8,
       keepsBot: yr,
     };
-  }, [sweep, earnings, currentIndex, restIndex, H, compact]);
+  }, [sweep, animatedAt, H, compact]);
 
   if (!model) return null;
   const { at, net, taxes, scale, active, inactive, keepsTop, keepsBot } = model;

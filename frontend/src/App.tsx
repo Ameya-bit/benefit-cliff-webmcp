@@ -4,6 +4,7 @@ import { usePeiraStore } from "./state/store";
 import type { SweepResult } from "./types";
 import { ConnectorLayer } from "./viz/ConnectorLayer";
 import { MapLegend } from "./viz/MapLegend";
+import { useAnimatedValue } from "./viz/useAnimatedValue";
 import { StackedSweepChart } from "./components/StackedSweepChart";
 import { DiffChart } from "./components/DiffChart";
 import { HeatmapChart } from "./components/HeatmapChart";
@@ -124,17 +125,31 @@ function FlowHead({
       : null,
   );
   // The one number that owns the tile: what the family keeps at the income
-  // the flow is showing.
-  const netAtCursor = usePeiraStore((s) => {
+  // the flow is showing. The INCOME is what animates (same value, same
+  // easing as the Sankey) and net is read off the curve — animating the
+  // net directly would cut straight across a cliff's dip instead of
+  // falling over it, and would disagree with the streams mid-flight.
+  const targetAt = usePeiraStore((s) => {
     if (flowSweep.x.length < 2) return null;
     const xs = flowSweep.x;
     const idx = s.currentIndex ?? restIndex;
-    const at = Math.max(
+    return Math.max(
       xs[0],
       Math.min(idx !== null && idx < xs.length ? xs[idx] : earnings, xs[xs.length - 1]),
     );
-    return interpolate(xs, flowSweep.net_income, at);
   });
+  const animatedAt = useAnimatedValue(targetAt ?? 0);
+  const netAtCursor =
+    targetAt === null
+      ? null
+      : interpolate(
+          flowSweep.x,
+          flowSweep.net_income,
+          Math.max(
+            flowSweep.x[0],
+            Math.min(animatedAt, flowSweep.x[flowSweep.x.length - 1]),
+          ),
+        );
 
   const onCursor = cursorX !== null && Math.round(cursorX) !== Math.round(earnings);
   return (
