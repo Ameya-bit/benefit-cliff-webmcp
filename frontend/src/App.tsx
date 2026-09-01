@@ -235,7 +235,7 @@ function FlowSheet({
 }
 
 export default function App() {
-  const mainRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const sweep = usePeiraStore((s) => s.sweep);
   const view = usePeiraStore((s) => s.view);
   const [flowOpen, setFlowOpen] = useState(false);
@@ -275,7 +275,7 @@ export default function App() {
         <HouseholdBar />
       </header>
 
-      <div className="main" ref={mainRef}>
+      <main className="main" ref={mainRef}>
         {!sweep || !flowSweep ? (
           <div className="empty-center">
             <StatusBanners />
@@ -334,7 +334,7 @@ export default function App() {
             <ConnectorLayer container={mainRef} />
           </>
         )}
-      </div>
+      </main>
 
       {flowOpen && flowSweep && (
         <FlowSheet

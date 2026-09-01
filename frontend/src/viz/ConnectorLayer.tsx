@@ -32,7 +32,7 @@ interface Beam {
 export function ConnectorLayer({
   container,
 }: {
-  container: React.RefObject<HTMLDivElement | null>;
+  container: React.RefObject<HTMLElement | null>;
 }) {
   const sweep = usePeiraStore((s) => s.sweep);
   const selectedCliff = usePeiraStore((s) => s.selectedCliff);

@@ -10,3 +10,6 @@ design-canvas/
 
 # Local Netlify folder
 .netlify
+
+# Local-only video prep
+docs/video-script.md
