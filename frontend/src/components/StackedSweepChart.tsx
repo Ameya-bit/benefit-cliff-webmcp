@@ -26,6 +26,14 @@ const BADGE_SPACING = 84;
 
 export const CHART_GEOM = { W, M };
 
+/** Mix a layer hex toward the sand surface — the soft-light gradient stops. */
+const towardSurface = (hex: string, t: number): string => {
+  const ch = (s: string, i: number) => parseInt(s.slice(i, i + 2), 16);
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * t);
+  const [r, g, b] = [1, 3, 5].map((i) => mix(ch(hex, i), ch(C.surface, i)));
+  return `rgb(${r},${g},${b})`;
+};
+
 const fmtK = (v: number) =>
   Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`;
 const fmt = (v: number) =>
@@ -200,6 +208,23 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         onPointerLeave={onPointerLeave}
         onClick={onPlotClick}
       >
+        {/* soft light: each band's fill fades airy toward its own top edge,
+            so layer boundaries melt instead of cut; the net line gets a
+            blurred cushion. Geometry is untouched — paint only. */}
+        <defs>
+          {[{ slug: "base", color: BASE_LAYER.color }, ...PROGRAM_LAYERS].map(
+            ({ slug, color }) => (
+              <linearGradient key={slug} id={`lg-${slug}`} x1={0} y1={1} x2={0} y2={0}>
+                <stop offset="0%" stopColor={towardSurface(color, 0.12)} />
+                <stop offset="100%" stopColor={towardSurface(color, 0.5)} />
+              </linearGradient>
+            ),
+          )}
+          <filter id="net-glow" x="-5%" y="-5%" width="110%" height="110%">
+            <feGaussianBlur stdDeviation={2.6} />
+          </filter>
+        </defs>
+
         {/* grid */}
         {yTicks.map((v) => (
           <g key={v}>
@@ -216,18 +241,16 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         ))}
 
         {/* base layer: earnings after taxes */}
-        <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill={BASE_LAYER.color} fillOpacity={0.55} stroke={C.surface} strokeWidth={2} />
+        <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill="url(#lg-base)" fillOpacity={0.55} />
         {/* program layers; a live trace dims everything but the binding one */}
         {PROGRAM_LAYERS.map((layer, k) => (
           <path
             key={layer.slug}
             d={areaPath(rows[k], rows[k + 1])}
-            fill={layer.color}
+            fill={`url(#lg-${layer.slug})`}
             fillOpacity={
-              trace ? (trace.dominant_program === layer.slug ? 0.92 : 0.15) : 0.82
+              trace ? (trace.dominant_program === layer.slug ? 1 : 0.18) : 0.94
             }
-            stroke={C.surface}
-            strokeWidth={2}
             style={{ transition: "fill-opacity 300ms ease" }}
           />
         ))}
@@ -243,12 +266,23 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
             opacity={0.7}
           />
         )}
-        {/* net income top edge */}
+        {/* net income top edge, cushioned by a faint glow */}
+        <path
+          d={`M${sweep.x.map((x, i) => `${sx(x)},${sy(rows[rows.length - 1][i])}`).join(" L")}`}
+          fill="none"
+          stroke={C.inkPrimary}
+          strokeWidth={6}
+          opacity={0.16}
+          filter="url(#net-glow)"
+          strokeLinejoin="round"
+        />
         <path
           d={`M${sweep.x.map((x, i) => `${sx(x)},${sy(rows[rows.length - 1][i])}`).join(" L")}`}
           fill="none"
           stroke={C.inkPrimary}
           strokeWidth={2.2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
         />
 
         {/* axis baseline */}
