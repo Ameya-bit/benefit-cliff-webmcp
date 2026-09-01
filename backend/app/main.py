@@ -54,8 +54,10 @@ def envelope(data) -> dict:
 # the two write-shaped, heaviest probes. One warm engine serves everyone
 # during judging, so they get a per-client sliding-window lid; everything
 # else is cheap enough to leave open. In-process on purpose: single
-# instance. Requires uvicorn --proxy-headers so request.client is the real
-# visitor, not Render's proxy (which would pool everyone into one bucket).
+# instance. Behind Render's proxy request.client is the proxy itself (one
+# shared bucket for everyone), so the client key comes from the RIGHTMOST
+# X-Forwarded-For entry — the hop Render appends; leftmost entries are
+# client-supplied and forgeable (a spoofer could rotate identities).
 
 RATE_LIMITS: dict[str, tuple[int, float]] = {
     "/reform": (10, 60.0),  # (max calls, window seconds)
@@ -85,7 +87,11 @@ def enforce_rate_limit(request: Request) -> None:
     if limit is None:
         return
     max_calls, window = limit
-    client = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    client = (
+        forwarded.rsplit(",", 1)[-1].strip()
+        or (request.client.host if request.client else "unknown")
+    )
     if not _sliding_window_allows(
         (client, request.url.path), max_calls, window, time.monotonic()
     ):
