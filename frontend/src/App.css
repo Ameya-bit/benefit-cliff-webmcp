@@ -445,8 +445,8 @@ header {
    connector beams that tie the map to the tiles below. */
 .map-legend {
   flex: none;
-  padding: 0 2px 4px;
-  margin-top: -2px;
+  padding: 0 2px 10px;
+  margin-top: 4px;
   font-size: 11.5px;
 }
 
@@ -483,9 +483,9 @@ header {
   align-items: baseline;
   flex-wrap: wrap;
   gap: 4px 12px;
-  padding: 2px 0 8px;
+  padding: 4px 0 8px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 .sec-head .eyebrow { white-space: nowrap; }
 .sec-head .at {

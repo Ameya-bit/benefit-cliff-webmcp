@@ -50,14 +50,16 @@ def envelope(data) -> dict:
 
 
 # --- rate limiting ---------------------------------------------------------
-# /reform rebuilds the full rules system (~6s) and /minimal_fix runs up to
-# ~8 such builds. One warm engine serves everyone during judging, so these
-# two endpoints get a per-client sliding-window lid; everything else is
-# cheap enough to leave open. In-process on purpose: single instance.
+# /reform edits policy and /minimal_fix searches policy-space (~5s live) —
+# the two write-shaped, heaviest probes. One warm engine serves everyone
+# during judging, so they get a per-client sliding-window lid; everything
+# else is cheap enough to leave open. In-process on purpose: single
+# instance. Requires uvicorn --proxy-headers so request.client is the real
+# visitor, not Render's proxy (which would pool everyone into one bucket).
 
 RATE_LIMITS: dict[str, tuple[int, float]] = {
     "/reform": (10, 60.0),  # (max calls, window seconds)
-    "/minimal_fix": (3, 120.0),
+    "/minimal_fix": (6, 60.0),
 }
 _request_log: dict[tuple[str, str], deque[float]] = defaultdict(deque)
 

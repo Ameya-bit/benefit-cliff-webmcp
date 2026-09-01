@@ -53,16 +53,19 @@ export function StatusBanners() {
   const engine = useEngineStatus();
   const probeError = usePeiraStore((s) => s.probeError);
   const setProbeError = usePeiraStore((s) => s.setProbeError);
+  // A drawn map is living proof the engine answered — never contradict it
+  // just because a health poll got lost (e.g. mid-deploy or flaky network).
+  const hasResults = usePeiraStore((s) => s.sweep !== null);
 
   return (
     <>
-      {engine === "checking" && (
+      {engine === "checking" && !hasResults && (
         <div className="status-banner warming" role="status">
           Starting the benefits engine — you can run numbers in a few
           seconds…
         </div>
       )}
-      {engine === "down" && (
+      {engine === "down" && !hasResults && (
         <div className="status-banner down" role="alert">
           We can&rsquo;t reach the benefits engine right now. Please try again
           in a minute.

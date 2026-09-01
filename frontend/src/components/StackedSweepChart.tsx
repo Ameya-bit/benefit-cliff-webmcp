@@ -18,7 +18,8 @@ import { useFittedHeight } from "../viz/useFittedBox";
 // beams; the live height is read from the svg's viewBox there.
 const W = 1240;
 const FALLBACK_H = 320;
-const M = { top: 40, right: 14, bottom: 30, left: 56 };
+// right must clear half the last x tick label ("$100k") or it crops
+const M = { top: 40, right: 28, bottom: 30, left: 56 };
 const PLOT_W = W - M.left - M.right;
 /** Cliff pills stack upward when neighbors crowd within a pill's width. */
 const BADGE_SPACING = 84;

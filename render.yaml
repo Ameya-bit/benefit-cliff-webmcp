@@ -6,7 +6,9 @@ services:
     region: oregon
     rootDir: backend
     buildCommand: pip install uv && uv sync --frozen --no-dev
-    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # --proxy-headers: behind Render's proxy, request.client must come from
+    # X-Forwarded-For or per-client rate limits treat every visitor as one.
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
     healthCheckPath: /health
     envVars:
       - key: PEIRA_ALLOWED_ORIGINS
