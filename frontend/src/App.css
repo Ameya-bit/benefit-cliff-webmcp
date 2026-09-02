@@ -1227,3 +1227,18 @@ header {
     max-width: none;
   }
 }
+
+/* The outgoing sweep map during an axis-window change: fades under the
+   domain tween (650ms, matched to MATRIX_DURATION_MS) so the zoom reads
+   as one camera move over the same curve. */
+.map-ghost {
+  pointer-events: none;
+  animation: map-ghost-fade 650ms ease forwards;
+}
+@keyframes map-ghost-fade {
+  from { opacity: 0.9; }
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-ghost { display: none; }
+}

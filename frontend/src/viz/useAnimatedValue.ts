@@ -10,9 +10,15 @@ const easeCubicOut = (t: number) => 1 - Math.pow(1 - t, 3);
  * flow's income, a pin releasing back to the household's earnings) glides
  * instead of snapping; during a scrub the tween restarts every frame from
  * wherever it is, which reads as a tight smooth-follow. Honors
- * prefers-reduced-motion by jumping.
+ * prefers-reduced-motion by jumping. Callers that must move in step with
+ * another animation can pass its duration and easing (the sweep map's
+ * domain glides in sync with useAnimatedMatrix this way).
  */
-export function useAnimatedValue(target: number): number {
+export function useAnimatedValue(
+  target: number,
+  durationMs: number = DURATION_MS,
+  easing: (t: number) => number = easeCubicOut,
+): number {
   const [current, setCurrent] = useState(target);
   const currentRef = useRef(target);
   currentRef.current = current;
@@ -29,8 +35,8 @@ export function useAnimatedValue(target: number): number {
     }
     const start = performance.now();
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / DURATION_MS);
-      setCurrent(from + (target - from) * easeCubicOut(t));
+      const t = Math.min(1, (now - start) / durationMs);
+      setCurrent(from + (target - from) * easing(t));
       if (t < 1) frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);

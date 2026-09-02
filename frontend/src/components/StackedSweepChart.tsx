@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePeiraStore } from "../state/store";
 import type { SweepResult } from "../types";
 import {
@@ -8,7 +8,12 @@ import {
   PROGRAM_LAYERS,
 } from "../viz/palette";
 import { AnnotationPins } from "../viz/AnnotationPins";
-import { useAnimatedMatrix } from "../viz/useAnimatedMatrix";
+import {
+  MATRIX_DURATION_MS,
+  easeCubicInOut,
+  useAnimatedMatrix,
+} from "../viz/useAnimatedMatrix";
+import { useAnimatedValue } from "../viz/useAnimatedValue";
 import { useFittedHeight } from "../viz/useFittedBox";
 
 // Wide aspect: the map is the ground of the page (roughly the bottom half)
@@ -82,23 +87,61 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
   const setPinnedIdx = usePeiraStore((s) => s.setPinnedIndex);
 
   const target = useMemo(() => stackBoundaries(sweep), [sweep]);
-  const rows = useAnimatedMatrix(target);
+  // When the axis window changes, the matrix snaps (see useAnimatedMatrix)
+  // and the transition is carried by the domain tween below plus a fading
+  // ghost of the outgoing map — a camera move over one curve, not a morph
+  // between two.
+  const rangeKey = `${sweep.x[0]}:${sweep.x[sweep.x.length - 1]}`;
+  const rows = useAnimatedMatrix(target, rangeKey);
 
-  const xMin = sweep.x[0];
-  const xMax = sweep.x[sweep.x.length - 1];
+  const [ghost, setGhost] = useState<SweepResult | null>(null);
+  const prevSweepRef = useRef(sweep);
+  useEffect(() => {
+    const prev = prevSweepRef.current;
+    prevSweepRef.current = sweep;
+    if (prev === sweep) return;
+    const rangeChanged =
+      prev.x[0] !== sweep.x[0] ||
+      prev.x[prev.x.length - 1] !== sweep.x[sweep.x.length - 1];
+    if (rangeChanged) setGhost(prev);
+  }, [sweep]);
+  const ghostRows = useMemo(
+    () => (ghost ? stackBoundaries(ghost) : null),
+    [ghost],
+  );
+
+  // The domain glides too: when a zoom (or a re-sweep with a different
+  // range) swaps the axes, the window eases onto the new extent instead of
+  // snapping — the map visibly zooms while useAnimatedMatrix morphs the
+  // values. Targets come from the incoming sweep, not the animated rows,
+  // so each swap is one clean tween.
+  const xMin = useAnimatedValue(sweep.x[0], MATRIX_DURATION_MS, easeCubicInOut);
+  const xMax = useAnimatedValue(
+    sweep.x[sweep.x.length - 1],
+    MATRIX_DURATION_MS,
+    easeCubicInOut,
+  );
   const yMin = Math.min(0, ...rows[0]);
-  const yMax = Math.max(...sweep.net_income, ...rows[rows.length - 1]) * 1.06;
+  const yMax = useAnimatedValue(
+    Math.max(...sweep.net_income, ...target[target.length - 1]) * 1.06,
+    MATRIX_DURATION_MS,
+    easeCubicInOut,
+  );
   const sx = (v: number) => M.left + ((v - xMin) / (xMax - xMin)) * PLOT_W;
   const sy = (v: number) => M.top + PLOT_H - ((v - yMin) / (yMax - yMin)) * PLOT_H;
 
-  const areaPath = (lower: number[], upper: number[]) => {
-    const fwd = sweep.x.map((x, i) => `${sx(x)},${sy(upper[i])}`).join(" L");
-    const back = [...sweep.x]
+  const areaPathFor = (xs: number[], lower: number[], upper: number[]) => {
+    const fwd = xs.map((x, i) => `${sx(x)},${sy(upper[i])}`).join(" L");
+    const back = [...xs]
       .reverse()
-      .map((x, i) => `${sx(x)},${sy(lower[sweep.x.length - 1 - i])}`)
+      .map((x, i) => `${sx(x)},${sy(lower[xs.length - 1 - i])}`)
       .join(" L");
     return `M${fwd} L${back} Z`;
   };
+  const areaPath = (lower: number[], upper: number[]) =>
+    areaPathFor(sweep.x, lower, upper);
+  const linePathFor = (xs: number[], ys: number[]) =>
+    `M${xs.map((x, i) => `${sx(x)},${sy(ys[i])}`).join(" L")}`;
 
   // The svg can be letterboxed inside its flexed box (preserveAspectRatio
   // xMidYMax) — map pointer positions against the drawn content, not the box.
@@ -199,7 +242,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMax meet"
         className="stacked-chart sweep-map"
-        aria-label={`Benefits map: earnings ${fmtK(xMin)} to ${fmtK(xMax)}, ${sweep.cliffs.length} cliff${sweep.cliffs.length === 1 ? "" : "s"}${
+        aria-label={`Benefits map: earnings ${fmtK(sweep.x[0])} to ${fmtK(sweep.x[sweep.x.length - 1])}, ${sweep.cliffs.length} cliff${sweep.cliffs.length === 1 ? "" : "s"}${
           worstDrop < 0
             ? `, worst costs ${fmt(Math.abs(worstDrop))} in one step`
             : ""
@@ -223,6 +266,11 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           <filter id="net-glow" x="-5%" y="-5%" width="110%" height="110%">
             <feGaussianBlur stdDeviation={2.6} />
           </filter>
+          {/* while the domain tween runs, data outside the target window
+              would draw past the axes — keep it inside the plot */}
+          <clipPath id="plot-clip">
+            <rect x={M.left} y={0} width={PLOT_W} height={M.top + PLOT_H} />
+          </clipPath>
         </defs>
 
         {/* grid */}
@@ -241,6 +289,35 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
         ))}
 
         {/* base layer: earnings after taxes */}
+        <g clipPath="url(#plot-clip)">
+        {/* the outgoing map during a window change: same curve, drawn under
+            the gliding camera while it fades — vacated regions dissolve
+            instead of blinking away */}
+        {ghost && ghostRows && (
+          <g className="map-ghost" onAnimationEnd={() => setGhost(null)}>
+            <path
+              d={areaPathFor(ghost.x, new Array(ghost.x.length).fill(0), ghostRows[0])}
+              fill="url(#lg-base)"
+              fillOpacity={0.55}
+            />
+            {PROGRAM_LAYERS.map((layer, k) => (
+              <path
+                key={layer.slug}
+                d={areaPathFor(ghost.x, ghostRows[k], ghostRows[k + 1])}
+                fill={`url(#lg-${layer.slug})`}
+                fillOpacity={0.94}
+              />
+            ))}
+            <path
+              d={linePathFor(ghost.x, ghostRows[ghostRows.length - 1])}
+              fill="none"
+              stroke={C.inkPrimary}
+              strokeWidth={2.2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          </g>
+        )}
         <path d={areaPath(new Array(sweep.x.length).fill(0), rows[0])} fill="url(#lg-base)" fillOpacity={0.55} />
         {/* program layers; a live trace dims everything but the binding one */}
         {PROGRAM_LAYERS.map((layer, k) => (
@@ -284,6 +361,7 @@ export function StackedSweepChart({ sweep }: { sweep: SweepResult }) {
           strokeLinejoin="round"
           strokeLinecap="round"
         />
+        </g>
 
         {/* axis baseline */}
         <line x1={M.left} y1={sy(Math.max(0, yMin))} x2={W - M.right} y2={sy(Math.max(0, yMin))} stroke={C.axis} strokeWidth={1} />

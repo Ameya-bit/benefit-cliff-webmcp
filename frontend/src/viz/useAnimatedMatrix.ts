@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-const DURATION_MS = 650;
+export const MATRIX_DURATION_MS = 650;
+const DURATION_MS = MATRIX_DURATION_MS;
 
-const easeCubicInOut = (t: number) =>
+export const easeCubicInOut = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 /**
@@ -10,21 +11,33 @@ const easeCubicInOut = (t: number) =>
  * swap — new sweep, ablation, policy reform — morphs the chart instead of
  * snapping it. Shape changes (first render, different point count) jump
  * immediately; only same-shape transitions animate.
+ *
+ * `jumpKey`: when this changes alongside the target, the swap snaps instead
+ * of tweening. The sweep map keys it on the axis window — after a zoom,
+ * index i is a *different income* in the old and new arrays, so value-wise
+ * morphing draws curves that never existed; the domain tween and the
+ * fading old-map ghost carry that transition instead.
  */
-export function useAnimatedMatrix(target: number[][]): number[][] {
+export function useAnimatedMatrix(
+  target: number[][],
+  jumpKey?: unknown,
+): number[][] {
   const [current, setCurrent] = useState(target);
   const currentRef = useRef(target);
   currentRef.current = current;
   const frame = useRef(0);
+  const lastJumpKey = useRef(jumpKey);
 
   useEffect(() => {
     cancelAnimationFrame(frame.current);
+    const keyChanged = lastJumpKey.current !== jumpKey;
+    lastJumpKey.current = jumpKey;
     const from = currentRef.current;
     const sameShape =
       from.length === target.length &&
       from.every((row, i) => row.length === target[i].length);
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!sameShape || reduceMotion) {
+    if (!sameShape || keyChanged || reduceMotion) {
       setCurrent(target);
       return;
     }
